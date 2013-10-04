@@ -1,0 +1,22 @@
+#ifdef DEBUG
+		fprintf (stdout, "Received %d bytes of data, errno: %d\n", bytes_read, errno);
+		fflush (stdout);
+#endif
+
+#ifdef DEBUG
+		fprintf (stdout, "Receive_input_packet:\n");
+		fprintf (stdout, "Input socket: %d\n", input_socket);
+		fflush (stdout);
+		fprintf (stdout, "Received %d bytes of data, errno: %d\n", bytes_read, errno);
+		fprintf (stdout, "Server address: %s\n", inet_ntoa(address.sin_addr));
+		fprintf (stdout, "Server port: %d\n\n", ntohs(address.sin_port));
+		fflush (stdout);
+#endif
+
+#ifdef DEBUG
+	fprintf (stdout, "\nUdp_socket_initialization:\n");
+	fprintf (stdout, "Port: %d\n", port);
+	fprintf (stdout, "(*address).sin_addr.s_addr: %d\n", (*address).sin_addr.s_addr);
+	fflush (stdout);
+	fprintf (stdout, "Socket: %d\n", *sk);
+#endif
