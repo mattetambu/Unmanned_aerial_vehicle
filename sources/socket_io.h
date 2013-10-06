@@ -10,8 +10,10 @@
 
 	/* function prototypes */
 	int check_address (char* IP_addr);
-	int address_initialization (struct sockaddr_in* address, int port, char* IP_addr /*NULL for INADDR_ANY*/);
-	int udp_socket_initialization (int* sk, int port);
+	int client_address_initialization (struct sockaddr_in* address, int port, char* IP_addr);
+	int server_address_initialization (struct sockaddr_in* address, int port);
+	int udp_server_socket_initialization (int* sk, int port);
+	int udp_client_socket_initialization (int* sk, int port);
 	int tcp_server_socket_initialization (int* sk, int port);
 	int tcp_client_socket_initialization (int* sk,  struct sockaddr_in* server_address);
 	

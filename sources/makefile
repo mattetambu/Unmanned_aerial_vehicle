@@ -1,6 +1,6 @@
 # Compile command
 compile_command = gcc
-compile_options = -Wall -Werror -O2 -lm
+compile_options = -Wall -Werror -O2 -lm -lpthread
 executable_name = FlightGear_comunicator
 
 
