@@ -1,0 +1,824 @@
+<?xml version="1.0"?>
+<glade-interface>
+  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-naming-policy project-wide -->
+  <widget class="GtkDialog" id="FlightGear_comunicator_main_window">
+    <property name="width_request">380</property>
+    <property name="height_request">585</property>
+    <property name="border_width">10</property>
+    <property name="title" translatable="yes">FlightGear Comunicator</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="type_hint">normal</property>
+    <property name="has_separator">False</property>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="dialog-vbox3">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child>
+          <widget class="GtkExpander" id="FDM_data_expander">
+            <property name="width_request">1</property>
+            <property name="height_request">0</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="expanded">True</property>
+            <property name="spacing">1</property>
+            <child>
+              <widget class="GtkVBox" id="FDM_data_vbox">
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkExpander" id="Orientation_expander">
+                    <property name="width_request">1</property>
+                    <property name="height_request">0</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="expanded">True</property>
+                    <child>
+                      <widget class="GtkVBox" id="Orientation_vbox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkHBox" id="Orientation_title_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Orientation_Property_Name_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Property Name</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Orientation_Value_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Value</property>
+                                <property name="ellipsize">end</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Roll_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Roll_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Roll</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Roll_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Pitch_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Pitch_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Pitch</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Pitch_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Heading_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Heading_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Heading</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Heading_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Roll_rate_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Roll_rate_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Roll rate</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Roll_rate_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Pitch_rate_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Pitch_rate_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Pitch rate</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Pitch_rate_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Yaw_rate_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Yaw_rate_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Yaw rate</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Yaw_rate_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">6</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="Orientation_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Orientation</property>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkExpander" id="Velocities_expander">
+                    <property name="width_request">1</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="expanded">True</property>
+                    <child>
+                      <widget class="GtkVBox" id="Velocities_vbox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkHBox" id="Velocities_title_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Velocities_Property_Name_llabel">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Property Name</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Velocities_Value_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Value</property>
+                                <property name="ellipsize">end</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Airspeed_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Airspeed_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Airspeed</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Airspeed_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="U-body_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="U-body_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">U-body</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="U-body_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="V-body_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="V-body_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">V-body</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="V-body_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="W-body_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="W-body_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">W-body</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="W-body_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="Velocities_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Velocities</property>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkExpander" id="Accelerations_expander">
+                    <property name="width_request">1</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="expanded">True</property>
+                    <child>
+                      <widget class="GtkVBox" id="Accelerations_vbox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkHBox" id="Accelerations_title_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Accelerations_Property_Name_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Property Name</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Accelerations_Value_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Value</property>
+                                <property name="ellipsize">end</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="NLF_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="NLF_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">NLF</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="NLF_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="X-accel_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="X-accel_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">X-accel</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="X-accel_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Y-accel_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Y-accel_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Y-accel</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Y-accel_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Z-accel_hbox">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Z-accel_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Z-accel</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkStatusbar" id="Z-accel_statusbar">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="spacing">1</property>
+                                <property name="has_resize_grip">False</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="Accelerations_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Accelerations</property>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="FDM_data_label">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">FDM Data</property>
+              </widget>
+              <packing>
+                <property name="type">label_item</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkHSeparator" id="hseparator1">
+            <property name="visible">True</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="padding">15</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkExpander" id="Controls_expander">
+            <property name="width_request">1</property>
+            <property name="height_request">0</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="expanded">True</property>
+            <child>
+              <widget class="GtkVBox" id="Controls_vbox">
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkHBox" id="Controls_title_hbox">
+                    <property name="visible">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Controls_Control_Name_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Control Name</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="Controls_Value_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Value</property>
+                        <property name="ellipsize">end</property>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Aileron_hbox">
+                    <property name="visible">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Aileron_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Aileron</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkStatusbar" id="Aileron_statusbar">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="spacing">2</property>
+                        <property name="has_resize_grip">False</property>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Flap_hbox">
+                    <property name="visible">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Flap_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Flap</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkStatusbar" id="Flap_statusbar">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="spacing">2</property>
+                        <property name="has_resize_grip">False</property>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Rudder_hbox">
+                    <property name="visible">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Rudder_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Rudder</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkStatusbar" id="Rudder_statusbar">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="spacing">1</property>
+                        <property name="has_resize_grip">False</property>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="Controls_label">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Controls</property>
+              </widget>
+              <packing>
+                <property name="type">label_item</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="dialog-action_area3">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <widget class="GtkButton" id="Close_button">
+                <property name="label" translatable="yes">gtk-close</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+</glade-interface>

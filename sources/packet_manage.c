@@ -20,11 +20,11 @@ int receive_input_packet (char* received_packet, int data_lenght, int input_sock
 	if (bytes_read > 0)
 	{
 		received_packet[bytes_read] = '\0';
-		if (getenv("VERBOSE"))
+		/*if (getenv("VERBOSE"))
 		{ //Print the raw data
 			fprintf (stdout, "\nReceived packet:\n%s", received_packet);
 			fflush (stdout);
-		}
+		}*/
 	}
 	
 	return bytes_read;
@@ -58,11 +58,11 @@ int send_output_packet (char* output_packet, int data_lenght, int output_socket,
 	else
 		bytes_sent = sendto (output_socket, output_packet, data_lenght, 0, (struct sockaddr*) address, sizeof (struct sockaddr));
 	
-	if (bytes_sent == data_lenght && getenv("VERBOSE"))
+	/*if (bytes_sent == data_lenght && getenv("VERBOSE"))
 	{ //Print Control inputs to stdout
 		fprintf (stdout, "\nControl signals sent\n%s\n", output_packet);
 		fflush (stdout);  		
-	}
+	}*/
 	
 	return bytes_sent;
 }

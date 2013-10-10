@@ -1,23 +1,24 @@
 # Compile command
-compile_command = gcc
-compile_options = -Wall -Werror -O2 -lm -lpthread
+CC = gcc
+CFLAGS = -Wall -O2 -lm -lpthread
+CLIBS = `pkg-config --cflags --libs gtk+-2.0 libglade-2.0 gmodule-2.0` 
 executable_name = FlightGear_comunicator
 
 
-UDP server:
+all:
 	@clear
 	@echo "FlightGear TCP/UDP comunicator"
 	@echo ""
-	@make -s Clean
-	@make -s Compile
+	@make -s clean
+	@make -s compile
 	@echo ""
 
-Compile: ./*.c
+compile: ./*.c
 	@echo "Compiling sources"
-	${compile_command} ${compile_options} ./*.c -o ${executable_name}
+	$(CC) $(CFLAGS) -g ./*.c -o $(executable_name) $(CLIBS)
 	@echo "   Compiling process complete."
 	@echo ""
 
-Clean:
+clean:
 	@echo "Removing previus build results"
-	@rm -f ${executable_name}
+	@rm -f $(executable_name)

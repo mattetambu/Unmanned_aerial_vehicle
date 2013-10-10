@@ -9,6 +9,7 @@
 #include "autopilot_logic.h"
 #include "packet_manage.h"
 #include "plot.h"
+#include "GUI.h"
 #include "main.h"
 
 #define	INPUT_DATA_MAX_LENGTH		1024
@@ -29,7 +30,7 @@
 #define UNIX_FLIGHTGEAR_LANCH_COMMAND		"\"/some_path/FlightGear/bin/fgfs\" --fg-root=\"/some_path/FlightGear/data\" --fg-scenery=\"/some_path/FlightGear/data/Scenery\""
 #define FLIGHTGEAR_LANCH_OPTIONS			" --language=it --control=keyboard --units-meters --enable-fuel-freeze --aircraft=c172p --airport=KHAF --enable-hud --timeofday=noon --in-air --altitude=2000 --vc=120 --enable-auto-coordination --httpd=5500"
 
-	
+
 int input_port = -1;
 int output_port = -1;
 char output_address[20];
@@ -57,6 +58,8 @@ void usage ()
 	printf ("\t Use TCP connection\n");
 	printf ("   -u --udp\n");
 	printf ("\t Use UDP connection [DEFAULT]\n");
+	printf ("   -g --gui\n");
+	printf ("\t Start the GUI\n");
 	printf ("   -s --start-FlightGear\n");
 	printf ("\t Start FlightGear whit the correct options\n");
 	printf ("   -d --do-not-send-command\n");
@@ -78,13 +81,14 @@ int check_arguments (int argc, char **argv)
 		{"address",					required_argument,	0,	'a'},
 		{"tcp",						no_argument,		0,	't'},
 		{"udp",						no_argument,		0,	'u'},
+		{"gui",						no_argument,		0,	'g'},
 		{"start-FlightGear",		no_argument,		0,	's'},
 		{"do-not-send-controls",	no_argument,		0,	'd'},
 		{"verbose",					no_argument,		0,	'v'},
 		{"help",					no_argument,		0,	'h'}
 	};
  
-	while ((option_character = getopt_long (argc, argv, "i:o:a:tusdvh", long_options, &option_index)) != -1)
+	while ((option_character = getopt_long (argc, argv, "i:o:a:tugsdvh", long_options, &option_index)) != -1)
 	{
 		switch (option_character)
 		{
@@ -108,10 +112,14 @@ int check_arguments (int argc, char **argv)
 				setenv ("UDP_FLAG", "", 0);
 				break;
 			
-			case 's': //set start_flightgear_flag
-				setenv ("START_FLIGHTGEAR", "", 0);
+			case 'g': //set start_flightgear_flag
+				setenv ("START_GUI", "", 0);
 				break;
-			
+
+			case 's': //set start_flightgear_flag
+							setenv ("START_FLIGHTGEAR", "", 0);
+							break;
+
 			case 'd': //set udp_flag
 				setenv ("DO_NOT_SEND_CONTROLS", "", 0);
 				break;
@@ -191,12 +199,12 @@ void* FlightGear_launcher (void* arg)
 	
 	sleep(1);
 	
-#if defined(__LINUX__) || defined(LINUX) || defined(linux)
-	command_length += strlen ((char*) UNIX_FLIGHTGEAR_LANCH_COMMAND);
-#elif defined(__CYGWIN__)
+#if defined(__CYGWIN__) || defined(CYGWIN) //CYGWIN
 	command_length += strlen ((char*) CYGWIN_FLIGHTGEAR_LANCH_COMMAND);
-#else //WINDOWS
+#elif defined(__WINDOWS__) || defined(WINDOWS) || defined(windows) || defined(G_OS_WIN32) || defined(G_PLATFORM_WIN32) //WINDOWS
 	command_length += strlen ((char*) WINDOWS_FLIGHTGEAR_LANCH_COMMAND);
+#else //defined(__LINUX__) || defined(LINUX) || defined(linux) || defined(G_OS_UNIX) //UNIX
+	command_length += strlen ((char*) UNIX_FLIGHTGEAR_LANCH_COMMAND);
 #endif
 
 	command_length += strlen ((char*) FLIGHTGEAR_LANCH_OPTIONS);
@@ -222,13 +230,13 @@ void* FlightGear_launcher (void* arg)
 		launcher_thread_return_value = -1;
 		pthread_exit(&launcher_thread_return_value);
 	}
-		
-#if defined(__LINUX__) || defined(LINUX) || defined(linux)
-	strcpy (command, (char*) UNIX_FLIGHTGEAR_LANCH_COMMAND);
-#elif defined(__CYGWIN__)
+
+#if defined(__CYGWIN__) || defined(CYGWIN) //CYGWIN
 	strcpy (command, (char*) CYGWIN_FLIGHTGEAR_LANCH_COMMAND);
-#else //WINDOWS
+#elif defined(__WINDOWS__) || defined(WINDOWS) || defined(windows) || defined(G_OS_WIN32) || defined(G_PLATFORM_WIN32) //WINDOWS
 	strcpy (command, (char*) WINDOWS_FLIGHTGEAR_LANCH_COMMAND);
+#else //defined(__LINUX__) || defined(LINUX) || defined(linux) || defined(G_OS_UNIX) //UNIX
+	strcpy (command, (char*) UNIX_FLIGHTGEAR_LANCH_COMMAND);
 #endif
 
 	strcat (command, (char*) FLIGHTGEAR_LANCH_OPTIONS);
@@ -267,7 +275,7 @@ void* FlightGear_launcher (void* arg)
 	free (command);
 	
 	pthread_exit(&launcher_thread_return_value);
-	return NULL;
+	return 0;
 }
 
 void* FlightGear_comunicator (void* arg)
@@ -396,14 +404,14 @@ void* FlightGear_comunicator (void* arg)
 		}
 	}
 	
-	return NULL;
+	return 0;
 }
 
 
 int main (int n_args, char** args)
 {
 	int* return_values[2];
-	pthread_t launcher_thread_ID, comunicator_thread_ID;
+	pthread_t launcher_thread_ID, comunicator_thread_ID, GUI_thread_ID;
 	pthread_mutex_init (&mutex, NULL);
 	
 	if (check_arguments (n_args, args) < 0)
@@ -412,7 +420,8 @@ int main (int n_args, char** args)
 		usage();
 		exit(-1);
 	}
-		
+
+
 	if (getenv("START_FLIGHTGEAR") && pthread_create (&launcher_thread_ID, NULL, FlightGear_launcher, NULL) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to launch FlightGear (errno: %d)\n", errno);
@@ -425,8 +434,15 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 	
+	if (getenv("START_GUI") &&  pthread_create (&GUI_thread_ID, NULL, start_GUI, NULL) != 0)
+	{
+		fprintf (stderr, "Can't create a thread to start the GUI (errno: %d)\n", errno);
+		exit(-1);
+	}
+
+
 	if (getenv("START_FLIGHTGEAR"))
-		pthread_join(launcher_thread_ID, (void**)&(return_values[0]));
+			pthread_join(launcher_thread_ID, (void**)&(return_values[0]));
 	
 	pthread_mutex_lock (&mutex);
 	SHUTDOWN_COMUNICATOR = 1;
@@ -442,9 +458,12 @@ int main (int n_args, char** args)
 	pthread_join(comunicator_thread_ID, (void**)&(return_values[1]));
 	pthread_mutex_destroy (&mutex);
 	
-	fprintf (stdout, "\nFlightGear-launcher return value: %d\n", *return_values[0]);
-	fprintf (stdout, "FlightGear-comunicator return value: %d\n", *return_values[1]);
-	fflush(stdout);
+	if (getenv("VERBOSE"))
+	{
+		fprintf (stdout, "\nFlightGear-launcher return value: %d\n", *return_values[0]);
+		fprintf (stdout, "FlightGear-comunicator return value: %d\n", *return_values[1]);
+		fflush(stdout);
+	}
 	
 	return 0;
 }
