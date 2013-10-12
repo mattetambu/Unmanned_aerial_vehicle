@@ -10,11 +10,13 @@
 
 	#include <glade/glade.h>
 	#include <gtk/gtk.h>
+	#include "common.h"
 
 	/* function prototypes */
 	void* start_GUI ();
 
 	/* global variables */
-	//empty
+	extern GtkWidget* properties_text_conteiners[N_USED_PROPERTIES];
+	extern GtkWidget* controls_text_conteiners[N_USED_CONTROLS];
 
 #endif

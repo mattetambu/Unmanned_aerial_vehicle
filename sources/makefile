@@ -1,7 +1,7 @@
 # Compile command
 CC = gcc
 CFLAGS = -Wall -O2 -lm -lpthread
-CLIBS = `pkg-config --cflags --libs gtk+-2.0 libglade-2.0 gmodule-2.0` 
+CLIBS = `pkg-config --cflags --libs gtk+-2.0 libglade-2.0 gmodule-2.0 gmodule-export-2.0` 
 executable_name = FlightGear_comunicator
 
 

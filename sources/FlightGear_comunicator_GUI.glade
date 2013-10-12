@@ -4,7 +4,7 @@
   <!-- interface-naming-policy project-wide -->
   <widget class="GtkDialog" id="FlightGear_comunicator_main_window">
     <property name="width_request">380</property>
-    <property name="height_request">585</property>
+    <property name="height_request">470</property>
     <property name="border_width">10</property>
     <property name="title" translatable="yes">FlightGear Comunicator</property>
     <property name="destroy_with_parent">True</property>
@@ -39,38 +39,9 @@
                         <property name="visible">True</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <widget class="GtkHBox" id="Orientation_title_hbox">
-                            <property name="visible">True</property>
-                            <child>
-                              <widget class="GtkLabel" id="Orientation_Property_Name_label">
-                                <property name="width_request">1</property>
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Property Name</property>
-                                <property name="ellipsize">middle</property>
-                              </widget>
-                              <packing>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="Orientation_Value_label">
-                                <property name="width_request">1</property>
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Value</property>
-                                <property name="ellipsize">end</property>
-                              </widget>
-                              <packing>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
                           <widget class="GtkHBox" id="Roll_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Roll_label">
                                 <property name="width_request">1</property>
@@ -83,11 +54,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Roll_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Roll_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -95,12 +64,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">1</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Pitch_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Pitch_label">
                                 <property name="width_request">1</property>
@@ -113,11 +83,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Pitch_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Pitch_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -125,12 +93,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">2</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Heading_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Heading_label">
                                 <property name="width_request">1</property>
@@ -143,11 +112,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Heading_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Heading_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -155,12 +122,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">3</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Roll_rate_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Roll_rate_label">
                                 <property name="width_request">1</property>
@@ -173,11 +141,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Roll_rate_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Roll_rate_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -185,12 +151,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">4</property>
+                            <property name="position">3</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Pitch_rate_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Pitch_rate_label">
                                 <property name="width_request">1</property>
@@ -203,11 +170,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Pitch_rate_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Pitch_rate_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -215,12 +180,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">5</property>
+                            <property name="position">4</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Yaw_rate_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Yaw_rate_label">
                                 <property name="width_request">1</property>
@@ -233,11 +199,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Yaw_rate_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Yaw_rate_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -245,7 +209,7 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">6</property>
+                            <property name="position">5</property>
                           </packing>
                         </child>
                       </widget>
@@ -275,38 +239,9 @@
                         <property name="visible">True</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <widget class="GtkHBox" id="Velocities_title_hbox">
-                            <property name="visible">True</property>
-                            <child>
-                              <widget class="GtkLabel" id="Velocities_Property_Name_llabel">
-                                <property name="width_request">1</property>
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Property Name</property>
-                                <property name="ellipsize">middle</property>
-                              </widget>
-                              <packing>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="Velocities_Value_label">
-                                <property name="width_request">1</property>
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Value</property>
-                                <property name="ellipsize">end</property>
-                              </widget>
-                              <packing>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
                           <widget class="GtkHBox" id="Airspeed_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Airspeed_label">
                                 <property name="width_request">1</property>
@@ -319,11 +254,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Airspeed_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Airspeed_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -331,12 +264,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">1</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="U-body_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="U-body_label">
                                 <property name="width_request">1</property>
@@ -349,11 +283,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="U-body_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="U-body_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -361,12 +293,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">2</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="V-body_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="V-body_label">
                                 <property name="width_request">1</property>
@@ -379,11 +312,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="V-body_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="V-body_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -391,12 +322,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">3</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="W-body_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="W-body_label">
                                 <property name="width_request">1</property>
@@ -409,11 +341,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="W-body_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="W-body_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -421,7 +351,7 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">4</property>
+                            <property name="position">3</property>
                           </packing>
                         </child>
                       </widget>
@@ -451,38 +381,9 @@
                         <property name="visible">True</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <widget class="GtkHBox" id="Accelerations_title_hbox">
-                            <property name="visible">True</property>
-                            <child>
-                              <widget class="GtkLabel" id="Accelerations_Property_Name_label">
-                                <property name="width_request">1</property>
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Property Name</property>
-                                <property name="ellipsize">middle</property>
-                              </widget>
-                              <packing>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="Accelerations_Value_label">
-                                <property name="width_request">1</property>
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Value</property>
-                                <property name="ellipsize">end</property>
-                              </widget>
-                              <packing>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
                           <widget class="GtkHBox" id="NLF_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="NLF_label">
                                 <property name="width_request">1</property>
@@ -495,11 +396,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="NLF_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="NLF_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -507,12 +406,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">1</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="X-accel_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="X-accel_label">
                                 <property name="width_request">1</property>
@@ -525,11 +425,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="X-accel_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="X-accel_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -537,12 +435,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">2</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Y-accel_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Y-accel_label">
                                 <property name="width_request">1</property>
@@ -555,11 +454,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Y-accel_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Y-accel_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -567,12 +464,13 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">3</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                         <child>
                           <widget class="GtkHBox" id="Z-accel_hbox">
                             <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
                             <child>
                               <widget class="GtkLabel" id="Z-accel_label">
                                 <property name="width_request">1</property>
@@ -585,11 +483,9 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkStatusbar" id="Z-accel_statusbar">
-                                <property name="width_request">1</property>
+                              <widget class="GtkLabel" id="Z-accel_value">
                                 <property name="visible">True</property>
-                                <property name="spacing">1</property>
-                                <property name="has_resize_grip">False</property>
+                                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -597,7 +493,7 @@
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">4</property>
+                            <property name="position">3</property>
                           </packing>
                         </child>
                       </widget>
@@ -656,38 +552,9 @@
                 <property name="visible">True</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <widget class="GtkHBox" id="Controls_title_hbox">
-                    <property name="visible">True</property>
-                    <child>
-                      <widget class="GtkLabel" id="Controls_Control_Name_label">
-                        <property name="width_request">1</property>
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Control Name</property>
-                        <property name="ellipsize">middle</property>
-                      </widget>
-                      <packing>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="Controls_Value_label">
-                        <property name="width_request">1</property>
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Value</property>
-                        <property name="ellipsize">end</property>
-                      </widget>
-                      <packing>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
                   <widget class="GtkHBox" id="Aileron_hbox">
                     <property name="visible">True</property>
+                    <property name="homogeneous">True</property>
                     <child>
                       <widget class="GtkLabel" id="Aileron_label">
                         <property name="width_request">1</property>
@@ -700,11 +567,9 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkStatusbar" id="Aileron_statusbar">
+                      <widget class="GtkLabel" id="Aileron_value">
                         <property name="width_request">1</property>
                         <property name="visible">True</property>
-                        <property name="spacing">2</property>
-                        <property name="has_resize_grip">False</property>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -712,17 +577,18 @@
                     </child>
                   </widget>
                   <packing>
-                    <property name="position">1</property>
+                    <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkHBox" id="Flap_hbox">
+                  <widget class="GtkHBox" id="Elevator_hbox">
                     <property name="visible">True</property>
+                    <property name="homogeneous">True</property>
                     <child>
-                      <widget class="GtkLabel" id="Flap_label">
+                      <widget class="GtkLabel" id="Elevator_label">
                         <property name="width_request">1</property>
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Flap</property>
+                        <property name="label" translatable="yes">Elevator</property>
                         <property name="ellipsize">middle</property>
                       </widget>
                       <packing>
@@ -730,11 +596,9 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkStatusbar" id="Flap_statusbar">
+                      <widget class="GtkLabel" id="Elevator_value">
                         <property name="width_request">1</property>
                         <property name="visible">True</property>
-                        <property name="spacing">2</property>
-                        <property name="has_resize_grip">False</property>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -743,12 +607,13 @@
                   </widget>
                   <packing>
                     <property name="expand">False</property>
-                    <property name="position">2</property>
+                    <property name="position">1</property>
                   </packing>
                 </child>
                 <child>
                   <widget class="GtkHBox" id="Rudder_hbox">
                     <property name="visible">True</property>
+                    <property name="homogeneous">True</property>
                     <child>
                       <widget class="GtkLabel" id="Rudder_label">
                         <property name="width_request">1</property>
@@ -761,11 +626,9 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkStatusbar" id="Rudder_statusbar">
+                      <widget class="GtkLabel" id="Rudder_value">
                         <property name="width_request">1</property>
                         <property name="visible">True</property>
-                        <property name="spacing">1</property>
-                        <property name="has_resize_grip">False</property>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -773,7 +636,7 @@
                     </child>
                   </widget>
                   <packing>
-                    <property name="position">3</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </widget>
@@ -798,12 +661,13 @@
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
-              <widget class="GtkButton" id="Close_button">
-                <property name="label" translatable="yes">gtk-close</property>
+              <widget class="GtkButton" id="Control_button">
+                <property name="label" translatable="yes">Start/Stop sending controls</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
+                <signal name="destroy" handler="stop_GUI"/>
+                <signal name="clicked" handler="control_button_clicked"/>
               </widget>
               <packing>
                 <property name="expand">False</property>

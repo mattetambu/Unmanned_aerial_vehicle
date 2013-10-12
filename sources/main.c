@@ -117,10 +117,10 @@ int check_arguments (int argc, char **argv)
 				break;
 
 			case 's': //set start_flightgear_flag
-							setenv ("START_FLIGHTGEAR", "", 0);
-							break;
+				setenv ("START_FLIGHTGEAR", "", 0);
+				break;
 
-			case 'd': //set udp_flag
+			case 'd': //set do_not_send_controls_flag
 				setenv ("DO_NOT_SEND_CONTROLS", "", 0);
 				break;
 			
