@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<mission mode="restart">
+	<command name="rtl"/>
+	<command name="loiter" seconds="30"/>
+	<command name="land"/>
+</mission>

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+
+<mission lastly="loiter" mode="restart">
+	<control name="repeat" times="5">
+		<control name="if" variable="wp_distance" condition="grater" value="15">
+			<command name="rth" id="14"/>
+			<control id="3" name="jump" target="21"/>
+		</control>
+	</control>
+	
+	<control name="while" variable="altitude" condition="less" value="35">
+		<command name="takeoff" id="17"/>
+		<control name="set" variable="speed" mode="relative" value="15"/>
+		<command name="land" id="21"/>
+	</control>
+	<control name="while" variable="altitude" condition="less" value="35">
+		<command name="takeoff" id="17"/>
+		<control name="set" variable="speed" mode="relative" value="15"/>
+		<command name="land" id="21"/>
+		<control name="if" variable="wp_distance" condition="grater" value="15">
+			<command name="rth" id="14"/>
+			<control id="5" name="jump" target="14"/>
+		</control>
+	</control>
+	<control name="while" variable="altitude" condition="less" value="35">
+		<command name="takeoff" id="17"/>
+		<control name="set" variable="speed" mode="relative" value="15"/>
+		<command name="land" id="21"/>
+		<control name="if" variable="wp_distance" condition="grater" value="15">
+			<command name="rth" id="14"/>
+			<control id="2" name="jump" target="17"/>
+		</control>
+	</control>
+	<command name="land" id="24" altitude="86"/>
+</mission>

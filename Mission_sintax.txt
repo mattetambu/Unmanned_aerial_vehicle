@@ -1,0 +1,89 @@
+MISSIOM TAG
+	SINTAX
+						<mission mode="MODE" on_ending="ENDING_CMD">
+							[command/set/control list]
+						</mission>
+	MODE				[RESTART, RESUME]
+	LASTLY				[DO_NOTHING, LOITER, RTL_AND_LAND, RTL_AND_LOITER]
+
+COMMAND TAG
+	SINTAX
+						<command id="ID" name*="COMMAND_NAME">
+							[property_list]
+						</command>
+	COMMAND_NAME		[WAYPOIT, LOITER, RTL, RTH, TAKEOFF, LAND]
+
+CONTROL TAG
+	SINTAX
+						<control id="ID" name*="CONTROL_NAME_1">
+							[property_list]
+						</control>
+						<control id="ID" name*="CONTROL_NAME_2">
+							[property_list]
+							[command/set/control list]
+						</control>
+	CONTROL_NAME_1		[DELAY, JUMP, SET]
+	CONTROL_NAME_3		[REPEAT, WHILE, IF]
+
+PROPERTY TAG
+	SINTAX				<property name*="PROPERTY_NAME" value*="VALUE"/>
+	PROPERTY_NAME		see ACCEPTED_PROPERTY
+
+
+ACCEPTED_PROPERTY
+	COMMAND
+		COMMAND_NAME	PROPERTY_NAME
+		WAYPOIT			altitude, latitude*, longitude*
+		LOITER			altitude, seconds, rounds, mode 
+						//mode=[clockwise/anticlockwise]
+						//if both seconds and rounds are set then rounds is discarded
+						//if both seconds and rounds are not set then it means LOITER_UNLIM 
+		RTL/RTH			altitude	
+		TAKEOFF/LAND	altitude
+	
+	CONTROL
+		CONTROL_NAME	PROPERTY_NAME
+		DELAY			seconds*
+		JUMP			target*
+		SET				variable*, value*, mode
+						//variable_name=[ALTITUDE, SPEED]
+						//mode=[absolute/relative]
+		IF/WHILE		variable*, value*, condition*
+						//variable_name=[ALTITUDE, SPEED, HEADING_ERROR, WP_DISTANCE]
+						//condition=[GRATER, GRATER_EQUAL, EQUAL, NOT_EQUAL, LESS_EQUAL, LESS]
+		REPEAT			times*
+	
+
+PROPERTY to OPTION assignament for list storing
+    COMMAND
+		COMMAND_NAME	OPZ1			OPZ2			OPZ3
+		WAYPOIT			altitude		latitude		longitude
+		LOITER			altitude		value			mode
+		RTL				altitude		-				-	
+		RTH				altitude		-				-	
+		TAKEOFF			altitude		-				-	
+		LAND			altitude		-				-	
+
+	CONTROL
+		CONTROL_NAME	OPZ1			OPZ2			OPZ3
+		DELAY			-				seconds			-	
+		JUMP			#lines			ID				CMD_ptr
+						//#lines=number of command line between JUMP and the pointed command
+		REPEAT			#lines			counter			REPEAT_END_ptr
+		REPEAT_END		-				value			REPEAT_ptr
+						//#lines=number of command line between REPEAT and REPEAT_END
+		WHILE			#lines			varable_name	WHILE_END_ptr
+		WHILE_END		condition		value			WHILE_ptr
+						//#lines=number of command line between WHILE and WHILE_END
+		IF				#lines			varable_name	IF_END_ptr
+		IF_END			condition		value			IF_ptr
+						//#lines=number of command line between IF and IF_END
+						
+	
+	Nel caso di più missioni in uno stesso file solo la prima verrà analizzata
+	Nel caso di ripetizioni di opzioni solo la prima definizione verrà considerata
+	Nel caso di opzioni definite sia inline che come property solo la imline verrà considerata
+	Nel caso di utilizzo di proprietà non accettate queste verranno semplicemente tralasciate
+	I figli di oggetti che non ne prevedono generano errore
+	Una missione senza comandi genera errore
+	Un jump a un id non presente genera errore
