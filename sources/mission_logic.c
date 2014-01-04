@@ -158,7 +158,7 @@ int check_command_altitude (accepted_command_t command_name, float altitude)
 			if (altitude > MAX_RTL_ALTITUDE)
 			{
 				fprintf (stderr, "Invalid property \'altitude\' in command tag of type \'%s\'\n", accepted_command_to_string(command_name));
-				fprintf (stderr, "It must be a positive number less than %d meters\n", MIN_RTL_ALTITUDE);
+				fprintf (stderr, "It must be a positive number less than %d meters\n", MAX_RTL_ALTITUDE);
 				return -1;
 			}
 #endif
@@ -176,7 +176,7 @@ int check_command_altitude (accepted_command_t command_name, float altitude)
 			if (altitude > MAX_RTH_ALTITUDE)
 			{
 				fprintf (stderr, "Invalid property \'altitude\' in command tag of type \'%s\'\n", accepted_command_to_string(command_name));
-				fprintf (stderr, "It must be a positive number less than %d meters\n", MIN_RTH_ALTITUDE);
+				fprintf (stderr, "It must be a positive number less than %d meters\n", MAX_RTH_ALTITUDE);
 				return -1;
 			}
 #endif
@@ -266,6 +266,52 @@ int check_command_altitude (accepted_command_t command_name, float altitude)
 	}
 	
 	return 0;
+}
+
+int check_set_value (set_variable_t set_variable, double value)
+{
+	switch (set_variable)
+	{
+		case set_variable_altitude:
+#ifdef MIN_SET_ALTITUDE
+			if (value < MIN_SET_ALTITUDE)
+			{
+				fprintf (stderr, "Invalid property \'value\' in command tag of type \'set\'\n");
+				fprintf (stderr, "Altitude value must be a positive number grater than %d meters\n", MIN_SET_ALTITUDE);
+				return -1;
+			}
+#endif
+#ifdef MAX_SET_ALTITUDE
+			if (value > MAX_SET_ALTITUDE)
+			{
+				fprintf (stderr, "Invalid property \'value\' in command tag of type \'set\'\n");
+				fprintf (stderr, "Altitude value must be a positive number less than %d meters\n", MAX_SET_ALTITUDE);
+				return -1;
+			}
+#endif
+			break;
+		case set_variable_speed:
+#ifdef MIN_SET_SPEED
+			if (value < MIN_SET_SPEED)
+			{
+				fprintf (stderr, "Invalid property \'value\' in command tag of type \'set\'\n");
+				fprintf (stderr, "Speed value must be a positive number grater than %d meters//seconds\n", MIN_SET_SPEED);
+				return -1;
+			}
+#endif
+#ifdef MAX_SET_SPEED
+			if (value > MAX_SET_SPEED)
+			{
+				fprintf (stderr, "Invalid property \'value\' in command tag of type \'set\'\n");
+				fprintf (stderr, "Speed value must be a positive number less than %d meters//seconds\n", MAX_SET_SPEED);
+				return -1;
+			}
+#endif
+			break;
+		default:
+			// should not happen
+			return -1;
+	}
 }
 
 int mission_structure_init (char *mission_file_name)

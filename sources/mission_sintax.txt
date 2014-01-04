@@ -69,6 +69,7 @@ PROPERTY to OPTION assignament for list storing
 		DELAY			-				seconds			-	
 		JUMP			#lines			ID				CMD_ptr
 						//#lines=number of command line between JUMP and the pointed command
+		SET				varable_name	value			mode
 		REPEAT			#lines			counter			REPEAT_END_ptr
 		REPEAT_END		-				value			REPEAT_ptr
 						//#lines=number of command line between REPEAT and REPEAT_END

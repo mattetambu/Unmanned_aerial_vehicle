@@ -1108,13 +1108,15 @@
                           <widget class="GtkTextView" id="Mission_textview">
                             <property name="height_request">330</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="tooltip" translatable="yes">Mission</property>
                             <property name="border_width">5</property>
                             <property name="pixels_above_lines">2</property>
                             <property name="pixels_below_lines">2</property>
                             <property name="editable">False</property>
                             <property name="left_margin">2</property>
                             <property name="right_margin">2</property>
+                            <property name="cursor_visible">False</property>
                           </widget>
                         </child>
                       </widget>
@@ -1205,7 +1207,7 @@
                     <child>
                       <widget class="GtkEntry" id="Home_waypoint_latitude_entry">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="sensitive">False</property>
                         <property name="tooltip" translatable="yes">Home waypoint latitude
 (used in RTL flight mode)</property>
                         <property name="editable">False</property>
@@ -1220,7 +1222,7 @@
                     <child>
                       <widget class="GtkEntry" id="Home_waypoint_longitude_entry">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="sensitive">False</property>
                         <property name="tooltip" translatable="yes">Home waypoint longitude
 (used in RTL flight mode)</property>
                         <property name="editable">False</property>

@@ -5,3 +5,5 @@ Inserisci nella logica la macchina a stati dell'autopilota
 Cerca tutti i parametri necessari all'autopilota
 Definisci come avviene il passaggio dei dati e quali sono i dati necessari ad ogni livello
 Cerca le malloc memset e metti il memset dopo il test
+
+Aggiungi proprietà alla missione per l'uso di diverse unità di misura

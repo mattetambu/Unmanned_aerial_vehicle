@@ -95,6 +95,20 @@
         }
     }
 	
+	static const char* condition_sign_to_simbol (condition_sign_t index)
+    {
+        switch(index)
+        {
+			return_custom_enum_string (condition_sign_equal, "=");
+			return_custom_enum_string (condition_sign_not_equal, "!=");
+			return_custom_enum_string (condition_sign_grater, ">");
+			return_custom_enum_string (condition_sign_grater_equal, ">=");
+			return_custom_enum_string (condition_sign_less, "<");
+			return_custom_enum_string (condition_sign_less_equal, "<=");
+			default: return NULL;
+        }
+    }
+	
 	typedef enum set_mode_t
 	{
 		set_mode_absolute,
@@ -155,6 +169,7 @@
 		test_variable_speed,
 		test_variable_heading_error,
 		test_variable_wp_distance,
+		test_variable_wp_eta,
 		test_variable_N_VARIABLES
 	} test_variable_t;
 	
@@ -166,6 +181,7 @@
 			return_custom_enum_string (test_variable_speed, "speed");
 			return_custom_enum_string (test_variable_heading_error, "heading_error");
 			return_custom_enum_string (test_variable_wp_distance, "wp_distance");
+			return_custom_enum_string (test_variable_wp_eta, "wp_eta");
 			default: return NULL;
         }
     }
@@ -259,6 +275,7 @@
 	int condition_sign_decode (const xmlChar *name, condition_sign_t *cond);
 	int check_coordinates (double coordinate);
 	int check_command_altitude (accepted_command_t command_name, float altitude);
+	int check_set_value (set_variable_t set_variable, double value);
 	int mission_structure_init (char *mission_file_name);
 	void mission_structure_destroy ();
 	

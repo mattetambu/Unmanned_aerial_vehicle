@@ -27,6 +27,9 @@ void output_control_button_clicked (GtkWidget *button, gpointer user_data)
 
 void reset_mission_button_clicked (GtkWidget *button, gpointer user_data)
 {
+	mission->to_execute = mission->command_list;
+	//mission_textview_update ();
+	
 	fprintf (stdout, "Mission restarted\n");
 	fflush (stdout);
 }
@@ -47,7 +50,7 @@ int mission_textview_fill (GtkTextView * mission_textview, gpointer user_data) {
 	int text_length;
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (mission_textview));
 	
-	text_length = snprintf ((char *) text_row, MAX_TEXT_ROW_LENGTH, "* mission mode=\"%s\" lastly=\"%s\"\n",
+	text_length = snprintf ((char *) text_row, MAX_TEXT_ROW_LENGTH, "* mission  mode=%s  lastly=%s \n",
 						mission_mode_to_string(mission->mode),
 						mission_lastly_cmd_to_string(mission->lastly));
 	textview_buffer_fill_whit_string (buffer, text_row, text_length);
@@ -71,6 +74,7 @@ int mission_textview_fill (GtkTextView * mission_textview, gpointer user_data) {
 
 void fly_to_waypoint_latitude_changed (GtkEntry *entry, gpointer user_data)
 {
+	// NOT YET IMPLEMENTED
 	// Obtain text string from entry
 	const gchar *text = gtk_entry_get_text (entry);
 
@@ -81,6 +85,7 @@ void fly_to_waypoint_latitude_changed (GtkEntry *entry, gpointer user_data)
 
 void fly_to_waypoint_longitude_changed (GtkEntry *entry, gpointer user_data)
 {
+	// NOT YET IMPLEMENTED
 	// Obtain text string from entry
 	const gchar *text = gtk_entry_get_text (entry);
 
@@ -92,6 +97,7 @@ void fly_to_waypoint_longitude_changed (GtkEntry *entry, gpointer user_data)
 
 void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer user_data)
 {
+	// NOT YET IMPLEMENTED
 	gint index;
 
 	// Get currently selected item's index

@@ -216,7 +216,11 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 					fprintf (stderr, "It must be a positive number grater than %d rounds\n", MIN_LOITER_ROUNDS);
 					return -1;
 				}
+				command->option2 = -command->option2;
 			}
+			// command->option2 == 0	->		loiter_unlim
+			// command->option2 > 0		->		loiter_time
+			// command->option2 < 0		->		loiter_circle
 			break;
 			
 		default:
@@ -320,6 +324,11 @@ int process_control_node (xmlNode *node, int node_depth, mission_command_t *comm
 				return -1;
 			}
 			command->option2 = (double) atof ((const char *) property);
+			if (check_set_value (set_variable, command->option2) < 0)
+			{
+				// already printed an error message
+				return -1;
+			}			
 			
 			if (xml_GetProp (node, "mode", &property) >= 0)
 			{
