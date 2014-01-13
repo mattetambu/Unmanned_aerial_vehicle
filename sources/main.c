@@ -1,27 +1,14 @@
 // main.c
 
-#include <getopt.h>
-#include <unistd.h>
-#include <signal.h>
-#include <pthread.h>
-#include "common.h"
-#include "FlightGear_launcher.h"
-#include "socket_io.h"
-#include "autopilot_logic.h"
-#include "autopilot_parameters.h"
-#include "mission_logic.h"
-#include "mission_parameters.h"
-#include "FlightGear_comunicator.h"
-#include "GUI.h"
 #include "main.h"
 
-char *mission_file_name = NULL;
 
+char *mission_file_name = NULL;
 
 void usage ()
 {
 	printf ("USAGE:\n");
-	printf ("   FlightGear_comunicator <options>\n");
+	printf ("   UAV_autopilot <options>\n");
 	printf ("OPTIONS:\n");
 	printf ("   -i --input-port\n");
 	printf ("\t Set the port where to receive flight-data from FlightGear\n");
@@ -36,7 +23,7 @@ void usage ()
 	printf ("   -g --gui\n");
 	printf ("\t Start the GUI (the Xserver must be already running - to start it launch startxwin from cmd)\n");
 	printf ("   -s --simulator\n");
-	printf ("\t Start FlightGear simulator whit the correct options\n");
+	printf ("\t Start FlightGear simulator with the correct options\n");
 	printf ("   -m --mission\n");
 	printf ("\t Set the file containing the mission to be executed\n");
 	printf ("   -d --do-not-send-command\n");
@@ -52,6 +39,7 @@ void usage ()
 int check_arguments (int argc, char **argv)
 {
 	int option_index = 0, option_character;
+	int input_port_set = 0, output_port_set = 0;
 	static struct option long_options[] = {
 		{"input-port",				required_argument,	0,	'i'},
 		{"output-port",				required_argument,	0,	'o'},
@@ -72,10 +60,12 @@ int check_arguments (int argc, char **argv)
 		{
 			case 'i': //set input_port
 				input_port = atoi (optarg);
+				input_port_set = 1;
 				break;
 				
 			case 'o': //set output_port
 				output_port = atoi (optarg);
+				output_port_set = 1;
 				break;
 				
 			case 'a': //set output_address
@@ -138,12 +128,12 @@ int check_arguments (int argc, char **argv)
 	else if (!getenv("UDP_FLAG")) //UDP set as the default protocol
 		setenv ("UDP_FLAG", "", 1);
 	
-	if (input_port == -1)
+	if (input_port_set == 0)
 		input_port = (getenv("TCP_FLAG"))? DEFAULT_TCP_INPUT_PORT : DEFAULT_UDP_INPUT_PORT;
 	if (input_port < 1023 ||  input_port > 65535)
 		return -1;
 	
-	if (output_port == -1)
+	if (output_port_set == 0)
 		output_port = (getenv("TCP_FLAG"))? DEFAULT_TCP_OUTPUT_PORT : DEFAULT_UDP_OUTPUT_PORT;
 	if (output_port < 1023 ||  output_port > 65535 || output_port == input_port)
 		return -1;
@@ -183,16 +173,15 @@ int check_arguments (int argc, char **argv)
 
 void do_before_exiting ()
 {
-	aircraft_structure_destroy ();
-	mission_structure_destroy ();
+	autopilot_destroy ();
 }
 
 
 int main (int n_args, char** args)
 {
 	int* return_values[3];
-	pthread_t launcher_thread_ID, comunicator_thread_ID, GUI_thread_ID;
-	pthread_mutex_init (&mutex, NULL);
+	pthread_t simulator_thread_ID, primary_thread_ID, GUI_thread_ID;
+	pthread_mutex_init (&shutdown_mutex, NULL);
 	
 	atexit (do_before_exiting);
 	if (check_arguments (n_args, args) < 0)
@@ -203,30 +192,26 @@ int main (int n_args, char** args)
 	}
 
 	sleep(3);
-
 	
-	if (aircraft_structure_init(/*aircraft*/) < 0)
+	if (getenv("START_GUI"))
+		gdk_threads_init ();
+	
+	if (autopilot_init(mission_file_name) < 0)
 	{
-		fprintf (stderr, "Impossible to initialize the aircraft structure\n");
+		fprintf (stderr, "Impossible to initialize the autopilot\n");
 		exit(-1);
 	}
 	
-	if (mission_structure_init (/*mission, */mission_file_name) != 0)
-	{
-		fprintf (stderr, "Impossible to initialize the mission structure\n");
-		exit(-1);
-	}
-
-	if (getenv("START_SIMULATOR") && pthread_create (&launcher_thread_ID, NULL, FlightGear_launcher, NULL) != 0)
+	if (getenv("START_SIMULATOR") && pthread_create (&simulator_thread_ID, NULL, FlightGear_launcher, NULL) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to launch FlightGear (errno: %d)\n", errno);
 		exit(-1);
 	}
 
 #ifndef DO_NOT_COMUNICATE
-	if (pthread_create (&comunicator_thread_ID, NULL, FlightGear_comunicator, NULL) != 0)
+	if (pthread_create (&primary_thread_ID, NULL, primary_loop, NULL) != 0)
 	{
-		fprintf (stderr, "Can't create a thread to comunicate whit FlightGear (errno: %d)\n", errno);
+		fprintf (stderr, "Can't create a thread to comunicate with FlightGear (errno: %d)\n", errno);
 		exit(-1);
 	}
 #endif
@@ -238,14 +223,14 @@ int main (int n_args, char** args)
 	}
 
 	if (getenv("START_SIMULATOR"))
-		pthread_join(launcher_thread_ID, (void**)&(return_values[0]));
+		pthread_join(simulator_thread_ID, (void**)&(return_values[0]));
 	else if (getenv("START_GUI"))
 		pthread_join(GUI_thread_ID, (void**)&(return_values[1]));
 
 #ifndef DO_NOT_COMUNICATE	
-	pthread_mutex_lock (&mutex);
-	SHUTDOWN_COMUNICATOR = 1;
-	pthread_mutex_unlock (&mutex);
+	pthread_mutex_lock (&shutdown_mutex);
+	shutdown_primary_thread = 1;
+	pthread_mutex_unlock (&shutdown_mutex);
 	
 	shutdown(input_socket, SHUT_RDWR);
 	close(input_socket);
@@ -254,8 +239,8 @@ int main (int n_args, char** args)
 		shutdown(output_socket, SHUT_RDWR);
 		close(output_socket);
 	}
-	pthread_join(comunicator_thread_ID, (void**)&(return_values[2]));
-	pthread_mutex_destroy (&mutex);
+	pthread_join(primary_thread_ID, (void**)&(return_values[2]));
+	pthread_mutex_destroy (&shutdown_mutex);
 #endif	
 	
 	if (getenv("VERBOSE"))
@@ -266,7 +251,7 @@ int main (int n_args, char** args)
 			fprintf (stdout, "GUI-launcher return value: %d\n", *return_values[1]);
 
 #ifndef DO_NOT_COMUNICATE
-		fprintf (stdout, "FlightGear-comunicator return value: %d\n", *return_values[2]);
+		fprintf (stdout, "Primary thread return value: %d\n", *return_values[2]);
 #endif
 		fflush(stdout);
 	}

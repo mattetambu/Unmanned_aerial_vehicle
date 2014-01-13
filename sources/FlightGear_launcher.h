@@ -2,14 +2,19 @@
 
 #ifndef _FLIGHTGEAR_LAUNCHER_H
 #define _FLIGHTGEAR_LAUNCHER_H
-		
+	
+	#include <signal.h>
+	#include <pthread.h>
+	#include "common.h"
+	#include "comunicator.h"
+	
 	#define DEFAULT_UDP_INPUT_PORT		8080
 	#define DEFAULT_TCP_INPUT_PORT		10010
 	#define DEFAULT_UDP_OUTPUT_PORT		8081
 	#define DEFAULT_TCP_OUTPUT_PORT		10011
 	#define DEFAULT_IP_ADDRESS			"127.0.0.1"
-	#define INPUT_FREQUENCY				"45"
-	#define OUTPUT_FREQUENCY			"40"
+	#define INPUT_FREQUENCY				"40"
+	#define OUTPUT_FREQUENCY			"30"
 
 	#ifdef USE_RADIANS
 		#define INPUT_PROTOCOL_FILE_NAME	"in_out_protocol-rad"

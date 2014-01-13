@@ -1,9 +1,7 @@
 // mission_file_parser.c
 
-#include "common.h"
 #include "mission_file_parser.h"
-#include "mission_logic.h"
-#include "mission_parameters.h"
+
 
 typedef struct mission_initialize_support_t
 {
@@ -56,7 +54,7 @@ int xml_GetProp (xmlNode *current_node, const char *name, xmlChar **prop)
 		return 0;
 	}
 	
-	// look if there is a child of type property whit the desidered property
+	// look if there is a child of type property with the desidered property
 	for (node = current_node->children; node; node = node->next)
 	{
 		if (node->type != XML_ELEMENT_NODE ||
@@ -112,7 +110,7 @@ int process_mission_node (xmlNode *node)
 int process_command_node (xmlNode *node, int node_depth, mission_command_t *command)
 {
 	xmlChar *property = NULL;
-	loiter_mode_t loiter_mode;
+	loiter_mode_t loiter_mode = 0;
 	
 	if (xml_GetProp (node, "id", &property) >= 0)
 	{
@@ -164,23 +162,16 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 				return -1;
 			}
 			command->option2 = (double) atof ((const char *) property);
-			if (check_coordinates (command->option2) < 0)
-			{
-				fprintf (stderr, "Invalid property \'latitude\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
-				fprintf (stderr, "It must be a positive number grater than 0\n"); // TO BE VERIFIED
-				return -1;
-			}
-			
+						
 			if (xml_GetProp (node, "longitude", &property) < 0)
 			{
 				fprintf (stderr, "Required property \'longitude\' for command tag of type \'%s\'\n", accepted_command_to_string(command->name));
 				return -1;
 			}
 			command->option3.dbl = (double) atof ((const char *) property);
-			if (check_coordinates (command->option3.dbl) < 0)
+			if (check_coordinates (command->option2, command->option3.dbl) < 0)
 			{
-				fprintf (stderr, "Invalid property \'longitude\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
-				fprintf (stderr, "It must be a positive number grater than 0\n"); // TO BE VERIFIED
+				// already printed the error message
 				return -1;
 			}
 			break;
@@ -235,10 +226,10 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 
 int process_control_node (xmlNode *node, int node_depth, mission_command_t *command)
 {
+	condition_sign_t condition;
 	test_variable_t test_variable;
 	set_variable_t set_variable;
-	set_mode_t set_mode;
-	condition_sign_t condition;
+	set_mode_t set_mode = 0;
 	xmlChar *property = NULL;
 	
 	if (xml_GetProp (node, "id", &property) >= 0)
@@ -669,7 +660,7 @@ int check_mission_integrity ()
 		if (command == NULL)
 		{
 			fprintf (stderr, "Invalid \'jump\' tag\n");
-			fprintf (stderr, "Target not found - can't find a tag whit id %f\n", support_list->command->option2);
+			fprintf (stderr, "Target not found - can't find a tag with id %f\n", support_list->command->option2);
 			return -1;
 		}
 

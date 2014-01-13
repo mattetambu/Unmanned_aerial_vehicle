@@ -59,6 +59,9 @@ PROPERTY to OPTION assignament for list storing
 		COMMAND_NAME	OPZ1			OPZ2			OPZ3
 		WAYPOIT			altitude		latitude		longitude
 		LOITER			altitude		value			mode
+						// value=0 means loiter_unlim
+						// value>0 means loiter_time
+						// value<0 means loiter_circle
 		RTL				altitude		-				-	
 		RTH				altitude		-				-	
 		TAKEOFF			altitude		-				-	
@@ -81,6 +84,8 @@ PROPERTY to OPTION assignament for list storing
 						//#lines=number of command line between IF and IF_END
 						
 	
+	Le coordinae devono essere espresse in Gradi Decimali (DD)
+	Le lunghezze in metri
 	Nel caso di più missioni in uno stesso file solo la prima verrà analizzata
 	Nel caso di ripetizioni di opzioni solo la prima definizione verrà considerata
 	Nel caso di opzioni definite sia inline che come property solo la imline verrà considerata

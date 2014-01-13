@@ -1,10 +1,14 @@
-// autopilot_logic.h
+// autopilot.h
 
-#ifndef	_AUTOPILOT_LOGIC_H_
-#define	_AUTOPILOT_LOGIC_H_
+#ifndef	_AUTOPILOT_H_
+#define	_AUTOPILOT_H_
 
 	#include "common.h"
 	#include "autopilot_parameters.h"
+	#include "mission_parameters.h"
+	#include "mission.h"
+	#include "aircraft_parameters.h"
+	#include "aircraft.h"
 	
 	typedef enum flight_mode_t
 	{
@@ -70,45 +74,36 @@
         }
     }
 	
-	typedef struct map_point_t
-	{
-		float altitude;
-		double latitude, longitude;
-	} map_point_t;
-	
 	typedef struct flight_parameters_error_t
 	{
 		float distance;
 		float altitude_error;
-		double bearing_error;
-		double heading_error;
-		double yaw_error, roll_error, pitch_error;
-		double yaw_rate_error, roll_rate_error, pitch_rate_error;
-		double north_velocity_error, east_velocity_error, down_velocity_error;
-		double north_acceleration_error, east_acceleration_error, down_acceleration_error;
+		float bearing_error;
+		float heading_error;
+		float yaw_error, roll_error, pitch_error;
+		float yaw_rate_error, roll_rate_error, pitch_rate_error;
+		float north_velocity_error, east_velocity_error, down_velocity_error;
+		float north_acceleration_error, east_acceleration_error, down_acceleration_error;
 	} flight_parameters_error_t;
-	
-	typedef	struct aircraft_t
+
+	typedef struct autopilot_t
 	{
 		navigation_state_t state;			// Aircraft navigation state
 		flight_mode_t flight_mode;			// Aircraft flight mode
+		flight_parameters_error_t* flight_parameters_error;	// Error between optimal flight parameters and current flight parameters
 		
 		map_point_t *home_WP;				// Coordinates of home point on the map
 		map_point_t *takeoff_WP;			// Coordinates of map point where the aircraft has exceeded the takeoff height
-		map_point_t *WP_to_reach;			// Coordinates of next point to reach on the map
-		flight_parameters_error_t* flight_parameters_error;	// Error between optimal flight parameters and current flight parameters
-		
-		double flight_data [N_PROPERTIES];		// FDM data
-		double flight_controls [N_CONTROLS];	// Flight Controls
-	} aircraft_t;
-
+		map_point_t *WP_to_reach;				// Coordinates of next point to reach on the map
+	} autopilot_t;	
+	
 	
 	/* function prototypes */
+	int autopilot_init (char *mission_file_name);
+	void autopilot_destroy ();
 	int compute_flight_controls (double* flight_controls, double* flight_data);
-	int aircraft_structure_init ();
-	void aircraft_structure_destroy ();
 	
 	/* global variables */
-	extern aircraft_t *aircraft;
-
+	extern autopilot_t *autopilot;
+	
 #endif

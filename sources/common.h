@@ -11,11 +11,11 @@
 	#include <sys/types.h>
 	#include <unistd.h>
 
-	typedef unsigned char uint8_t;
-	typedef short unsigned int uint16_t;
-	typedef unsigned int uint32_t;
-	typedef unsigned long uint64_t;
+	#define DEBUG
+	//#define INTERACTIVE
+	//#define DO_NOT_COMUNICATE //to be removed
 
+	
 	#define return_enum_string(ENUM_CODE) case ENUM_CODE: return #ENUM_CODE
 	#define return_custom_enum_string(ENUM_CODE, STRING) case ENUM_CODE: return STRING
 	
@@ -24,8 +24,16 @@
 	#define TIME_MISURE_UNIT	"seconds"
 	#define METERS_TO_FEETS_FACTOR 3.2808399
 	
-	//#define INTERACTIVE
-	#define DEBUG
-	//#define DO_NOT_COMUNICATE //to be removed
+	typedef unsigned char uint8_t;
+	typedef short unsigned int uint16_t;
+	typedef unsigned int uint32_t;
+	typedef unsigned long uint64_t;
 	
+	typedef struct map_point_t
+	{
+		float altitude;
+		double latitude, longitude;
+	} map_point_t;
+	
+
 #endif

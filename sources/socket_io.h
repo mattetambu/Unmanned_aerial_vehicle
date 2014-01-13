@@ -7,6 +7,7 @@
 	#include <netinet/in.h>
 	#include <arpa/inet.h>
 	#include <netdb.h>
+	#include "common.h"
 
 	/* function prototypes */
 	int check_address (char* IP_addr);
@@ -16,11 +17,8 @@
 	int udp_client_socket_initialization (int* sk, int port);
 	int tcp_server_socket_initialization (int* sk, int port);
 	int tcp_client_socket_initialization (int* sk,  struct sockaddr_in* server_address);
-	int receive_input_packet (char* received_packet, int data_lenght, int input_socket);
-	int send_output_packet (char* output_packet, int data_lenght, int output_socket, struct sockaddr_in* address);
 	
 	/* global variables */
-	extern int input_socket;
-	extern int output_socket;
+	extern int input_socket, output_socket;
 
 #endif

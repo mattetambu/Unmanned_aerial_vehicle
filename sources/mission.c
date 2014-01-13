@@ -1,9 +1,7 @@
-// mission_logic.c
+// mission.c
 
-#include "common.h"
-#include "mission_logic.h"
-#include "mission_file_parser.h"
-#include "mission_parameters.h"
+#include "mission.h"
+
 
 mission_t *mission = NULL;
 
@@ -135,9 +133,21 @@ int condition_sign_decode (const xmlChar *name, condition_sign_t *cond)
 	return -1;
 }
 
-int check_coordinates (double coordinate)
+int check_coordinates (double latitude, double longitude)
 {
-	// NOT YET IMPLEMENTED
+	if (latitude < -90 || latitude > 90)
+	{
+		fprintf (stderr, "Invalid property \'latitude\' in command tag of type \'waypoint\'\n");
+		fprintf (stderr, "It must be a real number between -90 and 90 degrees\n");
+		return -1;
+	}
+	if (longitude < -180 || longitude > 180)
+	{
+		fprintf (stderr, "Invalid property \'latitude\' in command tag of type \'waypoint\'\n");
+		fprintf (stderr, "It must be a real number between -180 and 180 degrees\n");
+		return -1;
+	}
+	
 	return 0;
 }
 
@@ -312,9 +322,11 @@ int check_set_value (set_variable_t set_variable, double value)
 			// should not happen
 			return -1;
 	}
+
+	return 0;
 }
 
-int mission_structure_init (char *mission_file_name)
+int mission_init (char *mission_file_name)
 {
 	xmlDoc *mission_file = NULL;	// Mission file
 	xmlNode *root_node;
@@ -389,7 +401,7 @@ int mission_structure_init (char *mission_file_name)
 	return 0;
 }
 
-void mission_structure_destroy ()
+void mission_destroy ()
 {
 	mission_command_t *command, *to_destroy;
 	

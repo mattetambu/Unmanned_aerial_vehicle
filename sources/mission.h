@@ -1,15 +1,16 @@
-// mission_logic.h
+// mission.h
 
-#ifndef	_MISSION_LOGIC_H_
-#define	_MISSION_LOGIC_H_
+#ifndef	_MISSION_H_
+#define	_MISSION_H_
 
 	#include <libxml/parser.h>
 	#include "common.h"
 	#include "mission_parameters.h"
+	#include "mission_file_parser.h"
 
 	#define ALWAYS_HAVE_A_MISSION
 	#define ABORT_ON_MISSION_FILE_ERROR
-	#define DEFAULT_MISSION_FILE_NAME "dafault_mission.xml"
+	#define DEFAULT_MISSION_FILE_NAME	"dafault_mission.xml"
 	
 	
 	typedef enum accepted_tag_t
@@ -161,7 +162,7 @@
         }
     }
 		
-	// maybe add some variables from autopilot_logic.h::flight_parameters_error_t
+	// maybe add some variables from autopilot.h::flight_parameters_error_t
 	// maybe add some variables from autopilot_parameters.h::FDM & CONTROLS
 	typedef enum test_variable_t
 	{
@@ -273,11 +274,11 @@
 	int mission_lastly_cmd_decode (const xmlChar *name, mission_lastly_cmd_t *lastly_command);
 	int loiter_mode_decode (const xmlChar *name, loiter_mode_t *loiter_mode);
 	int condition_sign_decode (const xmlChar *name, condition_sign_t *cond);
-	int check_coordinates (double coordinate);
+	int check_coordinates (double latitude, double longitude);
 	int check_command_altitude (accepted_command_t command_name, float altitude);
 	int check_set_value (set_variable_t set_variable, double value);
-	int mission_structure_init (char *mission_file_name);
-	void mission_structure_destroy ();
+	int mission_init (char *mission_file_name);
+	void mission_destroy ();
 	
 	/* global variables */
 	extern mission_t *mission;

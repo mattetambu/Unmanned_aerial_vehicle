@@ -1,11 +1,10 @@
 // GUI.c
 
 #include "GUI.h"
-#include "common.h"
-#include "mission_logic.h"
-#include "autopilot_logic.h"
-#include "autopilot_parameters.h"
-#include "plot.h"
+
+
+G_LOCK_DEFINE (properties_text_conteiners);
+G_LOCK_DEFINE (controls_text_conteiners);
 
 GtkWidget* properties_text_conteiners[N_PROPERTIES];
 GtkWidget* controls_text_conteiners[N_CONTROLS];
@@ -34,7 +33,7 @@ void reset_mission_button_clicked (GtkWidget *button, gpointer user_data)
 	fflush (stdout);
 }
 
-void textview_buffer_fill_whit_string (GtkTextBuffer *buffer, gchar *text_row, int text_length)
+void textview_buffer_fill_with_string (GtkTextBuffer *buffer, gchar *text_row, int text_length)
 {
 	GtkTextMark *mark;
 	GtkTextIter iter;
@@ -53,7 +52,7 @@ int mission_textview_fill (GtkTextView * mission_textview, gpointer user_data) {
 	text_length = snprintf ((char *) text_row, MAX_TEXT_ROW_LENGTH, "* mission  mode=%s  lastly=%s \n",
 						mission_mode_to_string(mission->mode),
 						mission_lastly_cmd_to_string(mission->lastly));
-	textview_buffer_fill_whit_string (buffer, text_row, text_length);
+	textview_buffer_fill_with_string (buffer, text_row, text_length);
 
 	for (command = mission->command_list; command; command = command->next)
 	{
@@ -63,11 +62,11 @@ int mission_textview_fill (GtkTextView * mission_textview, gpointer user_data) {
 			fprintf (stderr , "Failed to plot a mission command\n");
 			return -1;
 		}
-		textview_buffer_fill_whit_string (buffer, text_row, text_length);
+		textview_buffer_fill_with_string (buffer, text_row, text_length);
 	}
 
 	text_length = snprintf ((char *) text_row, MAX_TEXT_ROW_LENGTH, "  mission end");
-	textview_buffer_fill_whit_string (buffer, text_row, text_length);
+	textview_buffer_fill_with_string (buffer, text_row, text_length);
 
 	return 0;
 }
@@ -102,9 +101,9 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 
 	// Get currently selected item's index
 	index = gtk_combo_box_get_active(flight_mode_combobox);
-	aircraft->flight_mode = (flight_mode_t) index;
+	autopilot->flight_mode = (flight_mode_t) index;
 
-	fprintf (stdout, "Selected flight_mode index: %d\n", (int) aircraft->flight_mode);
+	fprintf (stdout, "Selected flight_mode index: %d\n", (int) autopilot->flight_mode);
 	fflush(stdout);
 
 	/*
@@ -116,6 +115,50 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 	g_free (string);
 	*/
 }
+
+int export_flight_data_in_GUI ()
+{
+	int i;
+
+	if (!getenv("START_GUI"))
+		return 0;
+	
+	// get GTK thread lock
+	gdk_threads_enter ();
+	
+	// lock the properties_text_conteiners variable
+	G_LOCK_EXTERN (properties_text_conteiners);
+		
+	for (i = LATITUDE; i <= LONGITUDE; i++)
+		if (properties_text_conteiners[i])
+			gtk_label_set_text (GTK_LABEL (properties_text_conteiners[i]), g_strdup_printf ("%.10f", aircraft->flight_data[i]));
+	
+	for (; i <= ENGINE_RPM; i++)
+		if (properties_text_conteiners[i])
+			gtk_label_set_text (GTK_LABEL (properties_text_conteiners[i]), g_strdup_printf ("%.6f", aircraft->flight_data[i]));
+		
+	// unlock the properties_text_conteiners variable
+	G_UNLOCK (properties_text_conteiners);
+	
+	if  (!getenv("DO_NOT_SEND_CONTROLS"))
+	{
+		// lock the controls_text_conteiners variable
+		G_LOCK_EXTERN (controls_text_conteiners);
+		
+		for (i = 0; i < N_CONTROLS; i++)
+			if (controls_text_conteiners[i])
+				gtk_label_set_text (GTK_LABEL (controls_text_conteiners[i]), g_strdup_printf ("%.6f", aircraft->flight_controls[i]));
+
+		// unlock the controls_text_conteiners variable
+		G_UNLOCK (controls_text_conteiners);
+	}
+	
+	// release GTK thread lock
+	gdk_threads_leave ();
+
+	return 1;
+}
+
 
 void stop_GUI (GtkWidget *button, gpointer user_data)
 {
@@ -137,8 +180,11 @@ void* start_GUI (void* args)
 	//Set DISPLAY enviroment variable if not set
 	setenv ("DISPLAY", ":0", 0);
 
+	// get GTK thread lock
+	gdk_threads_enter ();
+ 
 	//Initialize GTK+.
-	if (!gtk_init_check(0,NULL))
+	if (!gtk_init_check(0, NULL))
 	{
 		fprintf (stderr, "Failed to initialize gtk\n");
 		GUI_thread_return_value = -1;
@@ -146,7 +192,7 @@ void* start_GUI (void* args)
 	}
 
 	//Load the interface description.
-	xml = glade_xml_new("FlightGear_comunicator_GUI.glade", NULL, NULL);
+	xml = glade_xml_new("UAV_autopilot_GUI.glade", NULL, NULL);
 	if (!xml)
 	{
 		fprintf (stderr, "Failed to load glade xml\n");
@@ -156,8 +202,11 @@ void* start_GUI (void* args)
 
 	//glade_xml_signal_autoconnect(xml);
 	
+	// lock the properties_text_conteiners variable
+	G_LOCK (properties_text_conteiners);
+			
 	//Find the main window (not shown by default, ogcalcmm.cc need sit to be hidden initially) and then show it.
-	main_window = glade_xml_get_widget (xml,"FlightGear_comunicator_main_window");
+	main_window = glade_xml_get_widget (xml,"UAV_autopilot_GUI_main_window");
 	properties_text_conteiners[FLIGHT_TIME] = glade_xml_get_widget (xml,"Time_value");
 	properties_text_conteiners[LATITUDE] = glade_xml_get_widget (xml,"Latitude_value");
 	properties_text_conteiners[LONGITUDE] = glade_xml_get_widget (xml,"Longitude_value");
@@ -184,10 +233,19 @@ void* start_GUI (void* args)
 	properties_text_conteiners[DOWN_ACCELERATION] = glade_xml_get_widget (xml,"Down_acceleration_value");
 	properties_text_conteiners[ENGINE_RPM] = glade_xml_get_widget (xml,"Engine_rpm_value");
 	
+	// unlock the properties_text_conteiners variable
+	G_UNLOCK (properties_text_conteiners);
+	
+	// lock the controls_text_conteiners variable
+	G_LOCK (controls_text_conteiners);
+	
 	controls_text_conteiners[AILERON] = glade_xml_get_widget (xml,"Aileron_value");
 	controls_text_conteiners[ELEVATOR] = glade_xml_get_widget (xml,"Elevator_value");
 	controls_text_conteiners[RUDDER] = glade_xml_get_widget (xml,"Rudder_value");
 	controls_text_conteiners[THROTTLE] = glade_xml_get_widget (xml,"Throttle_value");
+
+	// unlock the controls_text_conteiners variable
+	G_UNLOCK (controls_text_conteiners);
 
 	output_control_button = glade_xml_get_widget (xml, "Output_control_button");
 	reset_mission_button = glade_xml_get_widget (xml, "Reset_mission_button");
@@ -210,7 +268,7 @@ void* start_GUI (void* args)
 	g_signal_connect (G_OBJECT (fly_to_waypoint_longitude_entry), "changed", G_CALLBACK (fly_to_waypoint_longitude_changed), NULL);
 
 	//Setup the interface status
-	if (flight_mode_combobox) gtk_combo_box_set_active ((GtkComboBox *) flight_mode_combobox, 0);
+	if (flight_mode_combobox) gtk_combo_box_set_active ((GtkComboBox *) flight_mode_combobox, STARTING_FLIGHT_MODE);
 	if (mission_textview && mission_textview_fill ((GtkTextView *) mission_textview, 0) < 0)
 	{
 		fprintf (stderr, "Failed to fill the GUI mission textbox\n");
@@ -218,10 +276,16 @@ void* start_GUI (void* args)
 		pthread_exit(&GUI_thread_return_value);
 	}
 	
+	// start the periodic export of fligth data and fligth controls
+	g_timeout_add (GUI_REFRESH_TIME, export_flight_data_in_GUI, NULL);
+	
 	//Enter the GTK Event Loop. This is where all the events are caught and handled. It is exited with gtk main quit().
 	gtk_widget_show (main_window);
 	gtk_main();
 
+	// release GTK thread lock
+	gdk_threads_leave ();
+	
 	pthread_exit(&GUI_thread_return_value);
 	return 0;
 }

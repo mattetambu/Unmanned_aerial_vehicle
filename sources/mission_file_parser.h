@@ -5,8 +5,8 @@
 
 	#include <libxml/parser.h>
 	#include "common.h"
-	#include "mission_logic.h"
 	#include "mission_parameters.h"
+	#include "mission.h"
 	
 	/* function prototypes */
 	int process_mission_node (xmlNode *node);
@@ -14,6 +14,6 @@
 	int check_mission_integrity ();
 	
 	/* global variables */
-	
+	// empty
 	
 #endif

@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 
 <mission lastly="loiter" mode="restart">
-	<command name="waypoint" id="1" latitude="234.4324234" longitude="12.123123123"/>
+	<command name="loiter" id="16" altitude="73" seconds="20" mode="anticlockwise"/>
+	<command name="waypoint" id="1" latitude="34.4324234" longitude="12.123123123"/>
 	<control name="delay" seconds="100"/>
-	<command name="waypoint" id="2" altitude="50" latitude="198.984234" longitude="98.217462178"/>
+	<command name="waypoint" id="2" altitude="50" latitude="18.984234" longitude="98.217462178"/>
 	<control name="delay" seconds="150"/>
-	<command name="waypoint" id="3" latitude="567.5675432" longitude="175.23568558"/>
+	<command name="waypoint" id="3" latitude="67.5675432" longitude="175.23568558"/>
 	<control name="while" variable="altitude" condition="less" value="75">
 		<control name="set" variable="speed" mode="relative" value="15"/>
 		<control name="set" variable="altitude" mode="relative" value="15"/>

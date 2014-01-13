@@ -1,10 +1,7 @@
 // FlightGear_launcher.c
 
-#include <signal.h>
-#include <pthread.h>
-#include "common.h"
 #include "FlightGear_launcher.h"
-#include "FlightGear_comunicator.h"
+
 
 int launcher_thread_return_value = 0;
 

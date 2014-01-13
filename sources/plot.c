@@ -1,39 +1,23 @@
 // plot.c
 
-#include "common.h"
-#include "autopilot_parameters.h"
-#include "mission_logic.h"
 #include "plot.h"
-#include "GUI.h"
 
-int plot_flight_data (double* flight_data)
+
+void plot_flight_data (double* flight_data)
 {
-	int return_value = 0, i;
-	
-	if (getenv("START_GUI"))
-	{
-		for (i = LATITUDE; i <= LONGITUDE; i++)
-			if (properties_text_conteiners[i])
-				gtk_label_set_text (GTK_LABEL (properties_text_conteiners[i]), g_strdup_printf ("%.18f", flight_data[i]));
-		for (; i <= ENGINE_RPM; i++)
-			if (properties_text_conteiners[i])
-				gtk_label_set_text (GTK_LABEL (properties_text_conteiners[i]), g_strdup_printf ("%.6f", flight_data[i]));
-	}
-	else
-	{
-		//Print data to screen for monitoring purposes
-		return_value = fprintf (stdout, "\nFlight-data\n\
-			Flight time: %.8f,\tTemperature: %.8f,\tPressure: %.8f\n\
-			Latitude: %.18f,\tLongitude: %.18f\n\
-			Altitude: %.8f,\tGround level: %.8f\n\
-			Roll angle: %.8f,\tPitch angle: %.8f,\tYaw angle: %.8f\n\
-			Roll rate: %.8f,\tPitch rate: %.8f,\tYaw rate: %.8f\n\
-			U velocity: %.8f,\tV velocity: %.8f,\tW velocity: %.8f\n\
-			North velocity: %.8f,\tEast velocity: %.8f,\tDown velocity: %.8f,\tAirspeed: %.8f\n\
-			X acceleration: %.8f,\tY acceleration: %.8f,\tZ acceleration: %.8f\n\
-			North acceleration: %.8f,\tEast acceleration: %.8f,\tDown acceleration: %.8f\n\
-			Engine rotation speed: %.8f\n\
-			Magnetic variation: %.8f,\tMagnetic dip: %.8f\n",
+	//Print data to screen for monitoring purposes
+	fprintf (stdout, "\nFlight-data\n\
+			Flight time: %.6f,\tTemperature: %.6f,\tPressure: %.6f\n\
+			Latitude: %.10f,\tLongitude: %.10f\n\
+			Altitude: %.6f,\tGround level: %.6f\n\
+			Roll angle: %.6f,\tPitch angle: %.6f,\tYaw angle: %.6f\n\
+			Roll rate: %.6f,\tPitch rate: %.6f,\tYaw rate: %.6f\n\
+			U velocity: %.6f,\tV velocity: %.6f,\tW velocity: %.6f\n\
+			North velocity: %.6f,\tEast velocity: %.6f,\tDown velocity: %.6f,\tAirspeed: %.6f\n\
+			X acceleration: %.6f,\tY acceleration: %.6f,\tZ acceleration: %.6f\n\
+			North acceleration: %.6f,\tEast acceleration: %.6f,\tDown acceleration: %.6f\n\
+			Engine rotation speed: %.6f\n\
+			Magnetic variation: %.6f,\tMagnetic dip: %.6f\n",
 			flight_data[FLIGHT_TIME], flight_data[TEMPERATURE], flight_data[PRESSURE],
 			flight_data[LATITUDE], flight_data[LONGITUDE],
 			flight_data[ALTITIUDE], flight_data[GROUND_LEVEL],
@@ -45,38 +29,24 @@ int plot_flight_data (double* flight_data)
 			flight_data[NORTH_ACCELERATION], flight_data[EAST_ACCELERATION], flight_data[DOWN_ACCELERATION],
 			flight_data[ENGINE_RPM],
 			flight_data[MAGNETIC_VARIATION], flight_data[MAGNETIC_DIP]);
-			fflush (stdout);
-	}
-	
-	return return_value;
+
+	fflush (stdout);
 }
 
-int plot_flight_controls (double* flight_controls)
+void plot_flight_controls (double* flight_controls)
 {
-	int return_value = 0, i;
-	
-	if (getenv("START_GUI"))
-	{
-		for (i = 0; i < N_CONTROLS; i++)
-			if (controls_text_conteiners[i])
-				gtk_label_set_text (GTK_LABEL (controls_text_conteiners[i]), g_strdup_printf ("%.6f", flight_controls[i]));
-	}
-	else
-	{
-		//Print data to screen for monitoring purposes
-		return_value = fprintf (stdout, "\nFlight_controls\n\
-			Aileron:\t%.8f\n\
-			Elevator:\t%.8f\n\
-			Rudder:\t\t%.8f\n\
-			Throttle:\t%.8f\n",
+	//Print data to screen for monitoring purposes
+	fprintf (stdout, "\nFlight_controls\n\
+			Aileron:\t%.6f\n\
+			Elevator:\t%.6f\n\
+			Rudder:\t\t%.6f\n\
+			Throttle:\t%.6f\n",
 			flight_controls[AILERON],
 			flight_controls[ELEVATOR],
 			flight_controls[RUDDER],
 			flight_controls[THROTTLE]);
-		fflush (stdout);
-	}
-	
-	return return_value;
+
+	fflush (stdout);
 }
 
 int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text_length)
@@ -125,7 +95,7 @@ int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text
 		case accepted_command_land:
 			if (command->option1 > 0)
 			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.1f  ", command->option1);
+				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
 				i += return_value;
 				if (return_value < 0)
 					return -1;
@@ -134,7 +104,7 @@ int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text
 		case accepted_command_waypoint:
 			if (command->option1 > 0)
 			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.1f  ", command->option1);
+				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
 				i += return_value;
 				if (return_value < 0)
 					return -1;
@@ -149,14 +119,14 @@ int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text
 		case accepted_command_loiter:
 			if (command->option1 > 0)
 			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.1f  ", command->option1);
+				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
 				i += return_value;
 				if (return_value < 0)
 					return -1;
 			}
 			if (command->option2 > 0)
 			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.0f  ", command->option2);
+				return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", command->option2);
 				i += return_value;
 				if (return_value < 0)
 					return -1;
@@ -176,7 +146,7 @@ int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text
 			break;
 			
 		case accepted_command_delay:
-			return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.0f  ", command->option2);
+			return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", command->option2);
 			i += return_value;
 			if (return_value < 0)
 				return -1;
@@ -190,7 +160,7 @@ int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text
 			break;
 			
 		case accepted_command_set:
-			return_value = snprintf (buffer_ptr+i, text_length-i, "variable=%s  value=%.1f  mode=%s  ",
+			return_value = snprintf (buffer_ptr+i, text_length-i, "variable=%s  value=%.3f  mode=%s  ",
 									set_variable_to_string((set_variable_t) command->option1),
 									command->option2,
 									set_mode_to_string((set_mode_t) command->option3.dbl));
@@ -208,7 +178,7 @@ int plot_mission_command (mission_command_t *command, char *buffer_ptr, int text
 		
 		case accepted_command_while:
 		case accepted_command_if:
-			return_value = snprintf (buffer_ptr+i, text_length-i, "(%s  %s  %.1f)  {  ",
+			return_value = snprintf (buffer_ptr+i, text_length-i, "(%s  %s  %.3f)  {  ",
 									test_variable_to_string ((test_variable_t) command->option2),
 									condition_sign_to_simbol ((condition_sign_t) command->option3.cmd_ptr->option1),
 									command->option3.cmd_ptr->option2);
