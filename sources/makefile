@@ -6,17 +6,17 @@ executable_name = UAV_autopilot
 
 
 all:
-	@clear
-	@echo "FlightGear TCP/UDP comunicator"
-	@echo ""
+	@echo " "
+	@echo "UAV Autopilot"
 	@make -s compile
-	@echo ""
+	@echo " "
 
 compile: ./*.c
 	@echo "Compiling sources"
+	@echo " "
 	$(CC) $(CFLAGS) ./*.c -o $(executable_name) $(CLIBS)
 	@echo "   Compiling process complete."
-	@echo ""
+	@echo " "
 
 clean:
 	@echo "Removing previus build results"

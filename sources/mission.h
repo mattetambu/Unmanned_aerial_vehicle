@@ -21,7 +21,7 @@
 		accepted_tag_property
 	} accepted_tag_t;
 	
-	static const char* accepted_tag_to_string (accepted_tag_t index)
+	inline static const char* accepted_tag_to_string (accepted_tag_t index)
     {
         switch(index)
         {
@@ -40,7 +40,7 @@
 		mission_mode_N_MODES
 	} mission_mode_t;
 	
-	static const char* mission_mode_to_string (mission_mode_t index)
+	inline static const char* mission_mode_to_string (mission_mode_t index)
     {
         switch(index)
         {
@@ -59,7 +59,7 @@
 		mission_lastly_cmd_N_COMMANDS
 	} mission_lastly_cmd_t;
 	
-	static const char* mission_lastly_cmd_to_string (mission_lastly_cmd_t index)
+	inline static const char* mission_lastly_cmd_to_string (mission_lastly_cmd_t index)
     {
         switch(index)
         {
@@ -82,7 +82,7 @@
 		condition_sign_N_SIGNS
 	} condition_sign_t;
 	
-	static const char* condition_sign_to_string (condition_sign_t index)
+	inline static const char* condition_sign_to_string (condition_sign_t index)
     {
         switch(index)
         {
@@ -96,7 +96,7 @@
         }
     }
 	
-	static const char* condition_sign_to_simbol (condition_sign_t index)
+	inline static const char* condition_sign_to_simbol (condition_sign_t index)
     {
         switch(index)
         {
@@ -117,7 +117,7 @@
 		set_mode_N_MODES
 	} set_mode_t;
 	
-	static const char* set_mode_to_string (set_mode_t index)
+	inline static const char* set_mode_to_string (set_mode_t index)
     {
         switch(index)
         {
@@ -134,7 +134,7 @@
 		loiter_mode_N_MODES
 	} loiter_mode_t;
 	
-	static const char* loiter_mode_to_string (loiter_mode_t index)
+	inline static const char* loiter_mode_to_string (loiter_mode_t index)
     {
         switch(index)
         {
@@ -152,7 +152,7 @@
 		set_variable_N_VARIABLES
 	} set_variable_t;
 	
-	static const char* set_variable_to_string (set_variable_t index)
+	inline static const char* set_variable_to_string (set_variable_t index)
     {
         switch(index)
         {
@@ -174,7 +174,7 @@
 		test_variable_N_VARIABLES
 	} test_variable_t;
 	
-	static const char* test_variable_to_string (test_variable_t index)
+	inline static const char* test_variable_to_string (test_variable_t index)
     {
         switch(index)
         {
@@ -211,7 +211,7 @@
 		accepted_command_N_COMMANDS
 	} accepted_command_t;
 	
-	static const char* accepted_command_to_string (accepted_command_t index)
+	inline static const char* accepted_command_to_string (accepted_command_t index)
     {
         switch(index)
         {
@@ -265,7 +265,6 @@
 	
 	
 	/* function prototypes */
-
 	int command_name_decode (const xmlChar *name, accepted_command_t *cmd_name);
 	int test_variable_decode (const xmlChar *name, test_variable_t *variable_name);
 	int set_variable_decode (const xmlChar *name, set_variable_t *variable_name);
@@ -277,6 +276,8 @@
 	int check_coordinates (double latitude, double longitude);
 	int check_command_altitude (accepted_command_t command_name, float altitude);
 	int check_set_value (set_variable_t set_variable, double value);
+	int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, int text_length);
+	int mission_restart ();
 	int mission_init (char *mission_file_name);
 	void mission_destroy ();
 	

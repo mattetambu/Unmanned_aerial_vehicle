@@ -9,8 +9,8 @@
 	
 	typedef	struct aircraft_t
 	{
-		double flight_data [N_PROPERTIES];		// FDM data
-		double flight_controls [N_CONTROLS];	// Flight Controls
+		double flight_data [FDM_N_PROPERTIES];		// FDM data
+		double flight_controls [CTRL_N_CONTROLS];	// Flight Controls
 	} aircraft_t;
 
 	

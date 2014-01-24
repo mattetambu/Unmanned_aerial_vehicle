@@ -2,7 +2,6 @@
 
 #include "autopilot.h"
 
-
 autopilot_t *autopilot = NULL;
 
 int autopilot_init (char *mission_file_name)
@@ -62,12 +61,10 @@ void autopilot_destroy ()
 		
 	if (autopilot->WP_to_reach)
 		free (autopilot->WP_to_reach);
-		
-	free (autopilot->flight_parameters_error);
 	
-	aircraft_destroy ();
-	mission_destroy ();
-		
+	if (autopilot->flight_parameters_error)
+		free (autopilot->flight_parameters_error);
+	
 	free (autopilot);
 }
 
@@ -77,19 +74,19 @@ int compute_flight_controls (double* flight_controls, double* flight_data)
 	float DELTA = 0.001;
 	
 	//Proportional control for roll and pitch
-	flight_controls[AILERON] = -0.05*(flight_data[ROLL_ANGLE] - 0);
-	flight_controls[ELEVATOR] = 0.1*(flight_data[PITCH_ANGLE] - 5);
-	flight_controls[RUDDER] = 0;
+	flight_controls[CTRL_AILERON] = -0.05*(flight_data[FDM_ROLL_ANGLE] - 0);
+	flight_controls[CTRL_ELEVATOR] = 0.1*(flight_data[FDM_PITCH_ANGLE] - 5);
+	flight_controls[CTRL_RUDDER] = 0;
 
 	//Set the engine throttle as a sinusoidal function
-	flight_controls[THROTTLE] += DELTA;
+	flight_controls[CTRL_THROTTLE] += DELTA;
 
 	//Limit control inputs
-	if (fabs(flight_controls[AILERON]) > 0.6)
-			flight_controls[AILERON] = (flight_controls[AILERON]/fabs(flight_controls[AILERON]))*0.6;
-	if (fabs(flight_controls[ELEVATOR]) > 0.6)
-			flight_controls[ELEVATOR] = (flight_controls[ELEVATOR]/fabs(flight_controls[ELEVATOR]))*0.6;
-	if ((flight_controls[THROTTLE] >= 0.95 && DELTA > 0) || (flight_controls[THROTTLE] <= 0.5 && DELTA < 0))
+	if (fabs(flight_controls[CTRL_AILERON]) > 0.6)
+			flight_controls[CTRL_AILERON] = (flight_controls[CTRL_AILERON]/fabs(flight_controls[CTRL_AILERON]))*0.6;
+	if (fabs(flight_controls[CTRL_ELEVATOR]) > 0.6)
+			flight_controls[CTRL_ELEVATOR] = (flight_controls[CTRL_ELEVATOR]/fabs(flight_controls[CTRL_ELEVATOR]))*0.6;
+	if ((flight_controls[CTRL_THROTTLE] >= 0.95 && DELTA > 0) || (flight_controls[CTRL_THROTTLE] <= 0.5 && DELTA < 0))
 		DELTA = -DELTA;
 
 	return 0;

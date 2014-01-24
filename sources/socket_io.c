@@ -52,6 +52,8 @@ int udp_server_socket_initialization (int* sk, int port)
 	
 	if (bind (*sk, (struct sockaddr*) &address, sizeof (struct sockaddr)) == -1)
 	{
+		shutdown(*sk, SHUT_RDWR);
+		close (*sk);
 		fprintf (stderr, "BIND return by an error (errno: %d)\n", errno);
 		return -1;
 	}
@@ -124,6 +126,8 @@ int tcp_client_socket_initialization (int* sk, struct sockaddr_in* server_addres
 	return_value = connect (*sk, (struct sockaddr*) server_address, sizeof (struct sockaddr));
 	if (return_value == -1)
 	{
+		shutdown(*sk, SHUT_RDWR);
+		close (*sk);
 		fprintf (stderr, "CONNECT return by an error (errno: %d)\n", errno);
 		return -1;
 	}

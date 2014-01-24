@@ -1,7 +1,7 @@
 // aircraft.c
 
+#include "common.h"
 #include "aircraft.h"
-
 
 aircraft_t *aircraft = NULL;			// The aircraft
 

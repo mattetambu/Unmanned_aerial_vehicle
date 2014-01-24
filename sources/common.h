@@ -12,10 +12,23 @@
 	#include <unistd.h>
 
 	#define DEBUG
-	//#define INTERACTIVE
-	//#define DO_NOT_COMUNICATE //to be removed
-
 	
+	/**< xxx to be removed */
+	//#define DO_NOT_COMUNICATE
+	//#define INTERACTIVE
+
+
+	#ifndef NULL
+		#define NULL	((void*) 0)
+	#endif
+
+	#ifndef size_t
+		#define size_t	unsigned int
+	#endif
+
+	#define N_SPACES_PER_TAB	5
+
+
 	#define return_enum_string(ENUM_CODE) case ENUM_CODE: return #ENUM_CODE
 	#define return_custom_enum_string(ENUM_CODE, STRING) case ENUM_CODE: return STRING
 	
@@ -35,5 +48,9 @@
 		double latitude, longitude;
 	} map_point_t;
 	
+
+	/* global variables */
+	// pthread_mutex_t shutdown_mutex;
+	extern int _shutdown_all_systems;
 
 #endif

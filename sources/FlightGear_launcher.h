@@ -36,6 +36,7 @@
 	void* FlightGear_launcher (void* args);
 	
 	/* global variables */
+	extern pthread_t simulator_thread_id;
 	extern int launcher_thread_return_value;
 
 #endif

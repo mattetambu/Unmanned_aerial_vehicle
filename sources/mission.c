@@ -326,6 +326,173 @@ int check_set_value (set_variable_t set_variable, double value)
 	return 0;
 }
 
+
+int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, int text_length)
+{
+	int i, j, return_value;
+
+	// should not happen
+	if (!command)
+		return -1;
+	
+	memset(buffer_ptr, '\0', text_length);
+
+	for (i = 0; i < ((int) command->depth*N_SPACES_PER_TAB) && i < text_length;)
+		for (j = 0; j < N_SPACES_PER_TAB; j++)
+			buffer_ptr[i++] = ' ';
+	
+	
+	if (command->name == accepted_command_end_repeat ||
+		command->name == accepted_command_end_while ||
+		command->name == accepted_command_end_if)
+		{
+			return_value = snprintf (buffer_ptr+i, text_length-i, "  }\n");
+			return (return_value < 0)? -1 : i + return_value;
+		}
+	
+	return_value = (command->name == accepted_command_repeat)? 
+					snprintf (buffer_ptr+i, text_length-i, "  while  ") :
+					snprintf (buffer_ptr+i, text_length-i, "  %s  ", accepted_command_to_string(command->name));
+	i += return_value;
+	if (return_value < 0)
+		return -1;
+	
+	if (command->id > 0)
+	{
+		return_value = snprintf (buffer_ptr+i, text_length-i, "id=%d  ", command->id);
+		i += return_value;
+		if (return_value < 0)
+			return -1;
+	}
+	
+	switch (command->name)
+	{
+		case accepted_command_rtl:
+		case accepted_command_rth:
+		case accepted_command_takeoff:
+		case accepted_command_land:
+			if (command->option1 > 0)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			break;
+		case accepted_command_waypoint:
+			if (command->option1 > 0)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			
+			return_value = snprintf (buffer_ptr+i, text_length-i, "latitude=%.8f  longitude=%.8f  ", command->option2, command->option3.dbl);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+			
+		case accepted_command_loiter:
+			if (command->option1 > 0)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			if (command->option2 > 0)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", command->option2);
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			else if (command->option2 < 0)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "rounds=%.0f  ", -command->option2);
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			
+			return_value = snprintf (buffer_ptr+i, text_length-i, "mode=%s  ", loiter_mode_to_string((loiter_mode_t) command->option3.dbl));
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+			
+		case accepted_command_delay:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", command->option2);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+			
+		case accepted_command_jump:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "target_id=%.0f  ", command->option2);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+			
+		case accepted_command_set:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "variable=%s  value=%.3f  mode=%s  ",
+									set_variable_to_string((set_variable_t) command->option1),
+									command->option2,
+									set_mode_to_string((set_mode_t) command->option3.dbl));
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+			
+		case accepted_command_repeat:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "(counter  <  %.0f)  {  ", command->option2);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+		
+		case accepted_command_while:
+		case accepted_command_if:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "(%s  %s  %.3f)  {  ",
+									test_variable_to_string ((test_variable_t) command->option2),
+									condition_sign_to_simbol ((condition_sign_t) command->option3.cmd_ptr->option1),
+									command->option3.cmd_ptr->option2);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+			
+		default:
+			// should not happen
+			fprintf (stderr, "Invalid property \'name\' in a command in the mission command list\n");
+			return -1;
+		
+	}
+	return_value = snprintf (buffer_ptr+i, text_length-i, "\n");
+
+	return (return_value < 0)? -1 : i + return_value;
+}
+
+int mission_restart ()
+{
+	// should not happen
+	if (mission == NULL)
+	{
+		fprintf (stderr, "Mission list not initialized\n");
+		return -1;
+	}
+	
+	mission->to_execute = mission->command_list;
+	
+	fprintf (stdout, "Mission restarted\n");
+	fflush (stdout);
+	
+	return 0;
+}
+
 int mission_init (char *mission_file_name)
 {
 	xmlDoc *mission_file = NULL;	// Mission file

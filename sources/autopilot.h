@@ -23,7 +23,7 @@
 		flight_mode_mission
 	} flight_mode_t;
 	
-	static const char* flight_mode_to_string (flight_mode_t index)
+	inline static const char* flight_mode_to_string (flight_mode_t index)
     {
         switch(index)
         {
@@ -55,7 +55,7 @@
 		navigation_state_reboot
 	} navigation_state_t;
 
-	static const char* navigation_state_to_string (navigation_state_t index)
+	inline static const char* navigation_state_to_string (navigation_state_t index)
     {
         switch(index)
         {

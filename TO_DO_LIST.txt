@@ -1,7 +1,7 @@
 Suddividi la logica dell'autopilota in funzione di flightmode
 	Cerca la logica degli autopiloti in ogni modalità
-	
-Cerca come rappresentare e gestire le coordinate
+
+
 Inserisci nella logica la macchina a stati dell'autopilota
 Cerca tutti i parametri necessari all'autopilota
 Definisci come avviene il passaggio dei dati e quali sono i dati necessari ad ogni livello

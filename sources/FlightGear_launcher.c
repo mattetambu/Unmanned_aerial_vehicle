@@ -2,7 +2,7 @@
 
 #include "FlightGear_launcher.h"
 
-
+pthread_t simulator_thread_id;
 int launcher_thread_return_value = 0;
 
 void* FlightGear_launcher (void* args)

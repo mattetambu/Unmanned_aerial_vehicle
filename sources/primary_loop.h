@@ -11,9 +11,9 @@
 	#include <pthread.h>
 	#include "common.h"
 	#include "comunicator.h"
+	#include "socket_io.h"
 	#include "autopilot.h"
 	#include "aircraft.h"
-	#include "plot.h"
 	
 	
 	#define	INPUT_DATA_MAX_LENGTH		1024
@@ -25,8 +25,7 @@
 	void* primary_loop (void* args);
 	
 	/* global variables */
-	extern int shutdown_primary_thread;
-	extern pthread_mutex_t shutdown_mutex;
+	extern pthread_t primary_thread_id;
 	extern int primary_thread_return_value;
-
+	
 #endif

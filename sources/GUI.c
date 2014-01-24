@@ -1,36 +1,37 @@
 // GUI.c
 
 #include "GUI.h"
-
+#include "mission.h"
 
 G_LOCK_DEFINE (properties_text_conteiners);
 G_LOCK_DEFINE (controls_text_conteiners);
 
-GtkWidget* properties_text_conteiners[N_PROPERTIES];
-GtkWidget* controls_text_conteiners[N_CONTROLS];
+GtkWidget *main_window;
+GtkWidget* properties_text_conteiners[FDM_N_PROPERTIES];
+GtkWidget* controls_text_conteiners[CTRL_N_CONTROLS];
+
+pthread_t GUI_thread_id;
 int GUI_thread_return_value = 0;
 
 void output_control_button_clicked (GtkWidget *button, gpointer user_data)
 {
-	int i;
 	if  (!getenv("DO_NOT_SEND_CONTROLS"))
-	{
 		setenv ("DO_NOT_SEND_CONTROLS", "", 0);
-		sleep(0.1);
-		for (i = 0; i < N_CONTROLS; i++)
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[i]), "-");
-	}
 	else
 		unsetenv ("DO_NOT_SEND_CONTROLS");
 }
 
+void mission_textview_update ()
+{
+	// TODO - to be implemented
+}
+
 void reset_mission_button_clicked (GtkWidget *button, gpointer user_data)
 {
-	mission->to_execute = mission->command_list;
-	//mission_textview_update ();
-	
-	fprintf (stdout, "Mission restarted\n");
-	fflush (stdout);
+	if (mission_restart () < 0)
+		fprintf (stderr, "Can't restart the mission\n");
+	else
+		mission_textview_update ();
 }
 
 void textview_buffer_fill_with_string (GtkTextBuffer *buffer, gchar *text_row, int text_length)
@@ -56,7 +57,7 @@ int mission_textview_fill (GtkTextView * mission_textview, gpointer user_data) {
 
 	for (command = mission->command_list; command; command = command->next)
 	{
-		text_length = plot_mission_command (command, (char*) text_row, MAX_TEXT_ROW_LENGTH);
+		text_length = buffer_print_mission_command (command, (char*) text_row, MAX_TEXT_ROW_LENGTH);
 		if (text_length < 0)
 		{
 			fprintf (stderr , "Failed to plot a mission command\n");
@@ -129,30 +130,32 @@ int export_flight_data_in_GUI ()
 	// lock the properties_text_conteiners variable
 	G_LOCK_EXTERN (properties_text_conteiners);
 		
-	for (i = LATITUDE; i <= LONGITUDE; i++)
+	for (i = FDM_LATITUDE; i <= FDM_LONGITUDE; i++)
 		if (properties_text_conteiners[i])
 			gtk_label_set_text (GTK_LABEL (properties_text_conteiners[i]), g_strdup_printf ("%.10f", aircraft->flight_data[i]));
 	
-	for (; i <= ENGINE_RPM; i++)
+	for (; i <= FDM_ENGINE_RPM; i++)
 		if (properties_text_conteiners[i])
 			gtk_label_set_text (GTK_LABEL (properties_text_conteiners[i]), g_strdup_printf ("%.6f", aircraft->flight_data[i]));
 		
 	// unlock the properties_text_conteiners variable
 	G_UNLOCK (properties_text_conteiners);
 	
-	if  (!getenv("DO_NOT_SEND_CONTROLS"))
-	{
-		// lock the controls_text_conteiners variable
-		G_LOCK_EXTERN (controls_text_conteiners);
-		
-		for (i = 0; i < N_CONTROLS; i++)
-			if (controls_text_conteiners[i])
-				gtk_label_set_text (GTK_LABEL (controls_text_conteiners[i]), g_strdup_printf ("%.6f", aircraft->flight_controls[i]));
-
-		// unlock the controls_text_conteiners variable
-		G_UNLOCK (controls_text_conteiners);
-	}
+	// lock the controls_text_conteiners variable
+	G_LOCK_EXTERN (controls_text_conteiners);
 	
+	for (i = 0; i < CTRL_N_CONTROLS; i++)
+		if (controls_text_conteiners[i])
+		{
+			if  (!getenv("DO_NOT_SEND_CONTROLS"))
+				gtk_label_set_text (GTK_LABEL (controls_text_conteiners[i]), g_strdup_printf ("%.6f", aircraft->flight_controls[i]));
+			else
+				gtk_label_set_text (GTK_LABEL (controls_text_conteiners[i]), "-");
+		}
+
+	// unlock the controls_text_conteiners variable
+	G_UNLOCK (controls_text_conteiners);
+
 	// release GTK thread lock
 	gdk_threads_leave ();
 
@@ -164,14 +167,25 @@ void stop_GUI (GtkWidget *button, gpointer user_data)
 {
 	unsetenv ("START_GUI");
 	setenv ("GUI_STOPPED", "", 0);
+
+	// Exit the GTK Event Loop.
+	gtk_main_quit();
+
 }
 
+void close_GUI ()
+{
+
+	if (main_window)
+		gtk_widget_destroy (main_window);
+
+	sleep (0.05);
+}
 
 // The Xserver must be started before this function (startxwin)
 void* start_GUI (void* args)
 {
 	GladeXML *xml;
-	GtkWidget *main_window;
 	GtkWidget *output_control_button, *reset_mission_button;
 	GtkWidget *fly_to_waypoint_latitude_entry, *fly_to_waypoint_longitude_entry;
 	//GtkWidget *home_waypoint_latitude_entry, *home_waypoint_longitude_entry;
@@ -187,6 +201,8 @@ void* start_GUI (void* args)
 	if (!gtk_init_check(0, NULL))
 	{
 		fprintf (stderr, "Failed to initialize gtk\n");
+		fprintf (stderr, "The Xserver must be started before using the GUI (startxwin)\n");
+		unsetenv ("START_GUI");
 		GUI_thread_return_value = -1;
 		pthread_exit(&GUI_thread_return_value);
 	}
@@ -207,31 +223,31 @@ void* start_GUI (void* args)
 			
 	//Find the main window (not shown by default, ogcalcmm.cc need sit to be hidden initially) and then show it.
 	main_window = glade_xml_get_widget (xml,"UAV_autopilot_GUI_main_window");
-	properties_text_conteiners[FLIGHT_TIME] = glade_xml_get_widget (xml,"Time_value");
-	properties_text_conteiners[LATITUDE] = glade_xml_get_widget (xml,"Latitude_value");
-	properties_text_conteiners[LONGITUDE] = glade_xml_get_widget (xml,"Longitude_value");
-	properties_text_conteiners[ALTITIUDE] = glade_xml_get_widget (xml,"Altitude_value");
-	properties_text_conteiners[GROUND_LEVEL] = glade_xml_get_widget (xml,"Ground_level_value");
-	properties_text_conteiners[ROLL_ANGLE] = glade_xml_get_widget (xml,"Roll_angle_value");
-	properties_text_conteiners[PITCH_ANGLE] = glade_xml_get_widget (xml,"Pitch_angle_value");
-	properties_text_conteiners[YAW_ANGLE] = glade_xml_get_widget (xml,"Yaw_angle_value");
-	properties_text_conteiners[ROLL_RATE] = glade_xml_get_widget (xml,"Roll_rate_value");
-	properties_text_conteiners[PITCH_RATE] = glade_xml_get_widget (xml,"Pitch_rate_value");
-	properties_text_conteiners[YAW_RATE] = glade_xml_get_widget (xml,"Yaw_rate_value");
-	properties_text_conteiners[U_VELOCITY] = glade_xml_get_widget (xml,"U_velocity_value");
-	properties_text_conteiners[V_VELOCITY] = glade_xml_get_widget (xml,"V_velocity_value");
-	properties_text_conteiners[W_VELOCITY] = glade_xml_get_widget (xml,"W_velocity_value");
-	properties_text_conteiners[NORTH_VELOCITY] = glade_xml_get_widget (xml,"North_velocity_value");
-	properties_text_conteiners[EAST_VELOCITY] = glade_xml_get_widget (xml,"East_velocity_value");
-	properties_text_conteiners[DOWN_VELOCITY] = glade_xml_get_widget (xml,"Down_velocity_value");
-	properties_text_conteiners[AIRSPEED] = glade_xml_get_widget (xml,"Airspeed_value");
-	properties_text_conteiners[X_ACCELERATION] = glade_xml_get_widget (xml,"X_acceleration_value");
-	properties_text_conteiners[Y_ACCELERATION] = glade_xml_get_widget (xml,"Y_acceleration_value");
-	properties_text_conteiners[Z_ACCELERATION] = glade_xml_get_widget (xml,"Z_acceleration_value");
-	properties_text_conteiners[NORTH_ACCELERATION] = glade_xml_get_widget (xml,"North_acceleration_value");
-	properties_text_conteiners[EAST_ACCELERATION] = glade_xml_get_widget (xml,"East_acceleration_value");
-	properties_text_conteiners[DOWN_ACCELERATION] = glade_xml_get_widget (xml,"Down_acceleration_value");
-	properties_text_conteiners[ENGINE_RPM] = glade_xml_get_widget (xml,"Engine_rpm_value");
+	properties_text_conteiners[FDM_FLIGHT_TIME] = glade_xml_get_widget (xml,"Time_value");
+	properties_text_conteiners[FDM_LATITUDE] = glade_xml_get_widget (xml,"Latitude_value");
+	properties_text_conteiners[FDM_LONGITUDE] = glade_xml_get_widget (xml,"Longitude_value");
+	properties_text_conteiners[FDM_ALTITIUDE] = glade_xml_get_widget (xml,"Altitude_value");
+	properties_text_conteiners[FDM_GROUND_LEVEL] = glade_xml_get_widget (xml,"Ground_level_value");
+	properties_text_conteiners[FDM_ROLL_ANGLE] = glade_xml_get_widget (xml,"Roll_angle_value");
+	properties_text_conteiners[FDM_PITCH_ANGLE] = glade_xml_get_widget (xml,"Pitch_angle_value");
+	properties_text_conteiners[FDM_YAW_ANGLE] = glade_xml_get_widget (xml,"Yaw_angle_value");
+	properties_text_conteiners[FDM_ROLL_RATE] = glade_xml_get_widget (xml,"Roll_rate_value");
+	properties_text_conteiners[FDM_PITCH_RATE] = glade_xml_get_widget (xml,"Pitch_rate_value");
+	properties_text_conteiners[FDM_YAW_RATE] = glade_xml_get_widget (xml,"Yaw_rate_value");
+	properties_text_conteiners[FDM_U_VELOCITY] = glade_xml_get_widget (xml,"U_velocity_value");
+	properties_text_conteiners[FDM_V_VELOCITY] = glade_xml_get_widget (xml,"V_velocity_value");
+	properties_text_conteiners[FDM_W_VELOCITY] = glade_xml_get_widget (xml,"W_velocity_value");
+	properties_text_conteiners[FDM_NORTH_VELOCITY] = glade_xml_get_widget (xml,"North_velocity_value");
+	properties_text_conteiners[FDM_EAST_VELOCITY] = glade_xml_get_widget (xml,"East_velocity_value");
+	properties_text_conteiners[FDM_DOWN_VELOCITY] = glade_xml_get_widget (xml,"Down_velocity_value");
+	properties_text_conteiners[FDM_AIRSPEED] = glade_xml_get_widget (xml,"Airspeed_value");
+	properties_text_conteiners[FDM_X_ACCELERATION] = glade_xml_get_widget (xml,"X_acceleration_value");
+	properties_text_conteiners[FDM_Y_ACCELERATION] = glade_xml_get_widget (xml,"Y_acceleration_value");
+	properties_text_conteiners[FDM_Z_ACCELERATION] = glade_xml_get_widget (xml,"Z_acceleration_value");
+	properties_text_conteiners[FDM_NORTH_ACCELERATION] = glade_xml_get_widget (xml,"North_acceleration_value");
+	properties_text_conteiners[FDM_EAST_ACCELERATION] = glade_xml_get_widget (xml,"East_acceleration_value");
+	properties_text_conteiners[FDM_DOWN_ACCELERATION] = glade_xml_get_widget (xml,"Down_acceleration_value");
+	properties_text_conteiners[FDM_ENGINE_RPM] = glade_xml_get_widget (xml,"Engine_rpm_value");
 	
 	// unlock the properties_text_conteiners variable
 	G_UNLOCK (properties_text_conteiners);
@@ -239,10 +255,10 @@ void* start_GUI (void* args)
 	// lock the controls_text_conteiners variable
 	G_LOCK (controls_text_conteiners);
 	
-	controls_text_conteiners[AILERON] = glade_xml_get_widget (xml,"Aileron_value");
-	controls_text_conteiners[ELEVATOR] = glade_xml_get_widget (xml,"Elevator_value");
-	controls_text_conteiners[RUDDER] = glade_xml_get_widget (xml,"Rudder_value");
-	controls_text_conteiners[THROTTLE] = glade_xml_get_widget (xml,"Throttle_value");
+	controls_text_conteiners[CTRL_AILERON] = glade_xml_get_widget (xml,"Aileron_value");
+	controls_text_conteiners[CTRL_ELEVATOR] = glade_xml_get_widget (xml,"Elevator_value");
+	controls_text_conteiners[CTRL_RUDDER] = glade_xml_get_widget (xml,"Rudder_value");
+	controls_text_conteiners[CTRL_THROTTLE] = glade_xml_get_widget (xml,"Throttle_value");
 
 	// unlock the controls_text_conteiners variable
 	G_UNLOCK (controls_text_conteiners);
@@ -279,6 +295,9 @@ void* start_GUI (void* args)
 	// start the periodic export of fligth data and fligth controls
 	g_timeout_add (GUI_REFRESH_TIME, export_flight_data_in_GUI, NULL);
 	
+	unsetenv ("GUI_STOPPED");
+
+
 	//Enter the GTK Event Loop. This is where all the events are caught and handled. It is exited with gtk main quit().
 	gtk_widget_show (main_window);
 	gtk_main();

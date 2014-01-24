@@ -10,9 +10,9 @@
 
 	#include <glade/glade.h>
 	#include <gtk/gtk.h>
+	#include <pthread.h>
 	#include "common.h"
 	#include "autopilot.h"
-	#include "plot.h"
 	
 	
 	#define MAX_TEXT_ROW_LENGTH		100
@@ -21,8 +21,11 @@
 
 	/* function prototypes */
 	void* start_GUI ();
+	void close_GUI ();
+	void mission_textview_update ();
 
 	/* global variables */
+	extern pthread_t GUI_thread_id;
 	extern int GUI_thread_return_value;
 
 #endif
