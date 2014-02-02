@@ -1,7 +1,21 @@
 # Compile command
+
 CC = gcc
 CFLAGS = -Wall -O2 -lm -lpthread -g
 CLIBS = `pkg-config --cflags --libs gtk+-2.0 libglade-2.0 gmodule-2.0 gmodule-export-2.0` `xml2-config --cflags --libs` `gtk-config --cflags --libs gthread`
+
+AUTOPILOT_SOURCES = ./autopilot/*.c
+MISSION_SOURCES = ./mission/*.c
+ORB_SOURCES = ./ORB/*.c
+SIMULATOR_SOURCES = ./simulator/*.c
+
+CONSOLE_CONTROLLER_SOURCES = ./uav_library/console_controller/*.c
+IO_CTRL_SOURCES = ./uav_library/io_ctrl/*.c
+DISPLAY_SOURCES = ./uav_library/display/*.c ./uav_library/display/GUI/*.c
+TIME_SOURCES = ./uav_library/time/*.c
+LIBRARY_SOURCES = $(CONSOLE_CONTROLLER_SOURCES) $(IO_CTRL_SOURCES) $(DISPLAY_SOURCES) $(TIME_SOURCES)
+
+SOURCES = ./*.c $(AUTOPILOT_SOURCES) $(MISSION_SOURCES) $(ORB_SOURCES) $(SIMULATOR_SOURCES) $(LIBRARY_SOURCES)
 executable_name = UAV_autopilot
 
 
@@ -11,10 +25,10 @@ all:
 	@make -s compile
 	@echo " "
 
-compile: ./*.c
+compile: $(SOURCES)
 	@echo "Compiling sources"
 	@echo " "
-	$(CC) $(CFLAGS) ./*.c -o $(executable_name) $(CLIBS)
+	$(CC) $(CFLAGS) $(SOURCES) -o $(executable_name) $(CLIBS)
 	@echo "   Compiling process complete."
 	@echo " "
 

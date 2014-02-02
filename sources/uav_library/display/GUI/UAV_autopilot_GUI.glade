@@ -1,0 +1,1268 @@
+<?xml version="1.0"?>
+<glade-interface>
+  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-naming-policy project-wide -->
+  <widget class="GtkDialog" id="UAV_autopilot_GUI_main_window">
+    <property name="width_request">700</property>
+    <property name="height_request">730</property>
+    <property name="border_width">10</property>
+    <property name="title" translatable="yes">UAV autopilot GUI</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="type_hint">normal</property>
+    <property name="has_separator">False</property>
+    <signal name="close" handler="close_GUI"/>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="Main_vbox">
+        <property name="width_request">700</property>
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">5</property>
+        <child>
+          <widget class="GtkHBox" id="Main_hbox">
+            <property name="width_request">700</property>
+            <property name="visible">True</property>
+            <child>
+              <widget class="GtkVBox" id="Flight_data_vbox">
+                <property name="width_request">350</property>
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkExpander" id="FDM_data_expander">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="expanded">True</property>
+                    <property name="spacing">1</property>
+                    <child>
+                      <widget class="GtkVBox" id="FDM_data_vbox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkExpander" id="Position_expander">
+                            <property name="width_request">1</property>
+                            <property name="height_request">0</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="expanded">True</property>
+                            <child>
+                              <widget class="GtkVBox" id="Position_vbox">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkHBox" id="Latitude_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Latitude_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Latitude [DD]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Latitude_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Longitude_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Longitude_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Longitude [DD]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Longitude_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Altitude_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Altitude_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Altitude [m]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Altitude_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Ground_level_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Ground_level_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Ground level [m]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Ground_level_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">3</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Position_label">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">&lt;i&gt;Position&lt;/i&gt;</property>
+                                <property name="use_markup">True</property>
+                              </widget>
+                              <packing>
+                                <property name="type">label_item</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="padding">4</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkExpander" id="Orientation_expander">
+                            <property name="width_request">1</property>
+                            <property name="height_request">0</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="expanded">True</property>
+                            <child>
+                              <widget class="GtkVBox" id="Orientation_vbox">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkHBox" id="Roll_angle_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Roll_angle_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Roll angle [rad]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Roll_angle_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Pitch_angle_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Pitch_angle_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Pitch angle [rad]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Pitch_angle_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Yaw_angle_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Yaw_angle_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Yaw angle [rad]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Yaw_angle_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Roll_rate_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Roll_rate_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Roll rate [rad/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Roll_rate_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">3</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Pitch_rate_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Pitch_rate_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Pitch rate [rad/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Pitch_rate_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">4</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Yaw_rate_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Yaw_rate_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Yaw rate [rad/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Yaw_rate_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">5</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Orientation_label">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">&lt;i&gt;Orientation&lt;/i&gt;</property>
+                                <property name="use_markup">True</property>
+                              </widget>
+                              <packing>
+                                <property name="type">label_item</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="padding">4</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkExpander" id="Velocities_expander">
+                            <property name="width_request">1</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="expanded">True</property>
+                            <child>
+                              <widget class="GtkVBox" id="Velocities_vbox">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkHBox" id="X_body_velocity_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="X_body_velocity_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">X body velocity [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="X_body_velocity_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Y_body_velocity_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Y_body_velocity_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Y body velocity [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Y_body_velocity_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Z_body_velocity_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Z_body_velocity_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Z body velocity [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Z_body_velocity_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="X_earth_velocity_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="X_earth_velocity_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">X earth velocity [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="X_earth_velocity_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">3</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Y_earth_velocity_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Y_earth_velocity_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Y earth velocity [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Y_earth_velocity_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">4</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Z_earth_velocity_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Z_earth_velocity_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Z earth velocity [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Z_earth_velocity_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">5</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Airspeed_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Airspeed_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Airspeed [m/s]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Airspeed_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">6</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Velocities_label">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">&lt;i&gt;Velocities&lt;/i&gt;</property>
+                                <property name="use_markup">True</property>
+                              </widget>
+                              <packing>
+                                <property name="type">label_item</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="padding">4</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkExpander" id="Accelerations_expander">
+                            <property name="width_request">1</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="expanded">True</property>
+                            <child>
+                              <widget class="GtkVBox" id="Accelerations_vbox">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkHBox" id="X_body_acceleration_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="X_body_acceleration_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">X body accelation [m/s2]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="X_body_acceleration_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Y_body_acceleration_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Y_body_acceleration_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Y body accelation [m/s2]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Y_body_acceleration_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Z_body_acceleration_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Z_body_acceleration_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Z body accelation [m/s2]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Z_body_acceleration_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Accelerations_label">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">&lt;i&gt;Accelerations&lt;/i&gt;</property>
+                                <property name="use_markup">True</property>
+                              </widget>
+                              <packing>
+                                <property name="type">label_item</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="padding">4</property>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkExpander" id="Engine_expander">
+                            <property name="width_request">1</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="expanded">True</property>
+                            <child>
+                              <widget class="GtkVBox" id="Engine_vbox">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkHBox" id="Engine_rotation_speed_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Engine_rotation_speed_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Engine rotation speed [hz]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Engine_rotation_speed_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkHBox" id="Engine_thrust_hbox">
+                                    <property name="visible">True</property>
+                                    <property name="homogeneous">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="Engine_thrust_label">
+                                        <property name="width_request">1</property>
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Engine thrust [N]</property>
+                                        <property name="ellipsize">middle</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="Engine_thrust_value">
+                                        <property name="visible">True</property>
+                                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Engine_label">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">&lt;i&gt;Engine&lt;/i&gt;</property>
+                                <property name="use_markup">True</property>
+                              </widget>
+                              <packing>
+                                <property name="type">label_item</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="padding">4</property>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="FDM_data_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">&lt;b&gt;FDM Data&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkExpander" id="Controls_expander">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="expanded">True</property>
+                    <child>
+                      <widget class="GtkVBox" id="Controls_vbox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkHBox" id="Aileron_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Aileron_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Aileron</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Aileron_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Elevator_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Elevator_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Elevator</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Elevator_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Rudder_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Rudder_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Rudder</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Rudder_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Throttle_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Throttle_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Throttle</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Throttle_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="Controls_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Controls&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">20</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVSeparator" id="Main_vseparator">
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="padding">15</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVBox" id="Autopilot_vbox">
+                <property name="width_request">350</property>
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkVBox" id="Mission_vbox">
+                    <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <widget class="GtkHButtonBox" id="Mission_hbuttonbox">
+                        <property name="visible">True</property>
+                        <child>
+                          <widget class="GtkLabel" id="Mission_label">
+                            <property name="visible">True</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Mission status&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkButton" id="Reset_mission_button">
+                            <property name="label" translatable="yes">Reset mission</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="clicked" handler="reset_mission_botton_clicked"/>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="padding">5</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="padding">5</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkScrolledWindow" id="Mission_textview_scrolled_window">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hscrollbar_policy">automatic</property>
+                        <property name="vscrollbar_policy">automatic</property>
+                        <child>
+                          <widget class="GtkTextView" id="Mission_textview">
+                            <property name="height_request">330</property>
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="tooltip" translatable="yes">Mission</property>
+                            <property name="border_width">5</property>
+                            <property name="pixels_above_lines">2</property>
+                            <property name="pixels_below_lines">2</property>
+                            <property name="editable">False</property>
+                            <property name="left_margin">2</property>
+                            <property name="right_margin">2</property>
+                            <property name="cursor_visible">False</property>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHSeparator" id="hseparator1">
+                    <property name="visible">True</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">10</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Fly_to_waypoint_hbox">
+                    <property name="visible">True</property>
+                    <property name="homogeneous">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Fly_to_waypoint_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Fly to waypoint</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="Fly_to_waypoint_latitude_entry">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="tooltip" translatable="yes">Fly_to waypoint latitude
+(used in Fly_to flight mode)</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                        <signal name="changed" handler="fly_to_waypoint_latitude_changed"/>
+                      </widget>
+                      <packing>
+                        <property name="padding">2</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="Fly_to_waypoint_longitude_entry">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="tooltip" translatable="yes">Fly_to waypoint longitude
+(used in Fly_to flight mode)</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                        <signal name="changed" handler="fly_to_waypoint_longitude_changed"/>
+                      </widget>
+                      <packing>
+                        <property name="padding">2</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">10</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Home_waypoint_hbox">
+                    <property name="visible">True</property>
+                    <property name="homogeneous">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Home_waypoint_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Home waypoint</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="Home_waypoint_latitude_entry">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="tooltip" translatable="yes">Home waypoint latitude
+(used in RTL flight mode)</property>
+                        <property name="editable">False</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                        <signal name="changed" handler="home_waypoint_latitude_changed"/>
+                      </widget>
+                      <packing>
+                        <property name="padding">2</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="Home_waypoint_longitude_entry">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="tooltip" translatable="yes">Home waypoint longitude
+(used in RTL flight mode)</property>
+                        <property name="editable">False</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                        <signal name="changed" handler="home_waypoint_longitude_changed"/>
+                      </widget>
+                      <packing>
+                        <property name="padding">2</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">10</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Flight_mode_hbox">
+                    <property name="visible">True</property>
+                    <property name="spacing">5</property>
+                    <child>
+                      <widget class="GtkLabel" id="Flight_mode_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Flight mode</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkComboBox" id="Flight_mode_combobox">
+                        <property name="visible">True</property>
+                        <property name="border_width">5</property>
+                        <property name="active">0</property>
+                        <property name="tearoff_title">Manual</property>
+                        <property name="items" translatable="yes">Manual
+Assist
+Stabilize
+Fly_by_wire
+Loiter
+Fly_to
+RTL (Return to launch WP)
+RTH (Return to home WP)
+Mission</property>
+                      </widget>
+                      <packing>
+                        <property name="padding">5</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="padding">20</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">2</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="Main_dialog_action_area">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <widget class="GtkButton" id="Output_control_button">
+                <property name="label" translatable="yes">Start/Stop sending controls</property>
+                <property name="width_request">200</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="output_control_button_clicked"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+</glade-interface>

@@ -3,18 +3,24 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/socket.h>
 #include <pthread.h>
+#include <gtk/gtk.h>
+#include <libxml/parser.h>
 
-#include "common.h"
-#include "FlightGear_launcher.h"
-#include "comunicator.h"
-#include "autopilot.h"
-#include "primary_loop.h"
-#include "printer_loop.h"
-#include "GUI.h"
-#include "ORB.h"
-#include "drv_time.h"
-#include "shell_controller.h"
+#include "uav_library/common.h"
+#include "uav_library/io_ctrl/socket_io.h"
+#include "uav_library/io_ctrl/comunicator.h"
+#include "uav_library/io_ctrl/comunicator_loop.h"
+#include "uav_library/time/drv_time.h"
+#include "uav_library/display/printer_loop.h"
+#include "uav_library/display/GUI/GUI.h"
+#include "uav_library/console_controller/console_controller.h"
+#include "simulator/FlightGear_launcher.h"
+#include "autopilot/autopilot.h"
+#include "mission/mission.h"
+#include "ORB/ORB.h"
+#include "test_thread.h"
 
 char *mission_file_name = NULL;
 int _shutdown_all_systems = 0;
@@ -195,11 +201,12 @@ int check_arguments (int argc, char **argv)
 
 void do_before_exiting ()
 {
+	_shutdown_all_systems = 1;
+
 	// Clean up
-	autopilot_destroy ();
-	aircraft_destroy ();
 	mission_destroy ();
 
+	sleep (0.2);
 	fprintf (stdout, "Done.\n");
 	fflush (stdout);
 }
@@ -208,9 +215,7 @@ void do_before_exiting ()
 int main (int n_args, char** args)
 {
 	int *thread_return_values[3];
-	// pthread_mutex_init (&shutdown_mutex, NULL);
-	
-	atexit (do_before_exiting);
+
 	if (check_arguments (n_args, args) < 0)
 	{
 		fprintf (stderr, "Bad args - Can't run the program\n");
@@ -218,28 +223,44 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 
-	sleep(3);
+	atexit (do_before_exiting);
+	sleep(1);
 	
-	// system init
+	// ************************************* system init ****************************************
 	if (getenv("START_GUI"))
 		gdk_threads_init ();
 	
 	system_time_init ();
 	system_orb_init ();
-	
-	if (autopilot_init(mission_file_name) < 0)
+
+	fprintf (stdout, "\n");
+	fflush (stdout);
+
+	if (mission_init (mission_file_name) != 0)
 	{
-		fprintf (stderr, "Impossible to initialize the autopilot\n");
+		fprintf (stderr, "Impossible to initialize the mission\n");
 		exit(-1);
 	}
-	
-	// start shell controller
-	if (pthread_create (&shell_thread_id, NULL, shell_controller_loop, NULL) != 0)
+
+
+	// ************************************* start all system threads ****************************************
+	// start console controller
+	if (pthread_create (&console_thread_id, NULL, console_controller_loop, NULL) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to interact whit the application (errno: %d)\n", errno);
 		exit(-1);
 	}
-	
+
+#ifndef DO_NOT_COMUNICATE
+	// start primary comunicator loop
+	// it must be before start simulator for tcp connections
+	if (pthread_create (&primary_thread_id, NULL, comunicator_loop, NULL) != 0)
+	{
+		fprintf (stderr, "Can't create a thread to comunicate with FlightGear (errno: %d)\n", errno);
+		exit(-1);
+	}
+#endif
+
 	// start simulator
 	if (getenv("START_SIMULATOR") && pthread_create (&simulator_thread_id, NULL, FlightGear_launcher, NULL) != 0)
 	{
@@ -247,19 +268,20 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 
-#ifndef DO_NOT_COMUNICATE
-	// start primary comunicator loop
-	if (pthread_create (&primary_thread_id, NULL, primary_loop, NULL) != 0)
-	{
-		fprintf (stderr, "Can't create a thread to comunicate with FlightGear (errno: %d)\n", errno);
-		exit(-1);
-	}
-#endif
-	
+	if (getenv("START_SIMULATOR"))
+		sleep (20);
+
 	// start GUI
 	if (getenv("START_GUI") &&  pthread_create (&GUI_thread_id, NULL, start_GUI, NULL) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to start the GUI (errno: %d)\n", errno);
+		exit(-1);
+	}
+	
+	// start autopilot
+	if (pthread_create (&autopilot_thread_id, NULL, autopilot_loop, NULL) != 0)
+	{
+		fprintf (stderr, "Can't create an autopilot thread to compute the flight controls (errno: %d)\n", errno);
 		exit(-1);
 	}
 
@@ -269,21 +291,32 @@ int main (int n_args, char** args)
 		fprintf (stderr, "Can't create a thread to print the aircraft status (errno: %d)\n", errno);
 		exit(-1);
 	}
+	
+	// start test thread - xxx to be removed
+	if (START_TEST_THREAD && pthread_create (&test_thread_id, NULL, test_thread_body, NULL) != 0)
+	{
+		fprintf (stderr, "Can't create the test thread (errno: %d)\n", errno);
+		exit(-1);
+	}
 
+
+	// ************************************* wait for all threads to exit ****************************************
+	// if the simulator mode is active then the main quit will arrive on simulator exit
+	// else the main quit must arrive from console input
 	if (getenv("START_SIMULATOR"))
 	{
 		pthread_join(simulator_thread_id, (void**)&(thread_return_values[0]));
-		if (getenv("START_GUI"))
-			close_GUI ();
+		_shutdown_all_systems = 1;
 	}
 
+	pthread_join(console_thread_id, NULL);
+
+
 	if (getenv("START_GUI") && !getenv("GUI_STOPPED"))
-			pthread_join(GUI_thread_id, (void**)&(thread_return_values[1]));
-
-
-	// pthread_mutex_lock (&shutdown_mutex);
-	_shutdown_all_systems = 1;
-	// pthread_mutex_unlock (&shutdown_mutex);
+	{
+		close_GUI ();
+		pthread_join(GUI_thread_id, (void**)&(thread_return_values[1]));
+	}
 
 
 #ifndef DO_NOT_COMUNICATE
@@ -300,11 +333,11 @@ int main (int n_args, char** args)
 	}
 
 	pthread_join (primary_thread_id, (void**)&(thread_return_values[2]));
-	// pthread_mutex_destroy (&shutdown_mutex);
-#endif	
+#endif
 
+
+	// ************************************* print some data before exit ****************************************
 	fprintf (stdout, "\n\n");
-
 	if (getenv("VERBOSE"))
 	{
 		if (getenv("START_SIMULATOR"))
@@ -313,7 +346,7 @@ int main (int n_args, char** args)
 			fprintf (stdout, "GUI-launcher return value: %d\n", *(thread_return_values[1]));
 
 #ifndef DO_NOT_COMUNICATE
-		fprintf (stdout, "Primary thread return value: %d\n", *(thread_return_values[2]));
+		fprintf (stdout, "Comunicator thread return value: %d\n", *(thread_return_values[2]));
 #endif
 	}
 
