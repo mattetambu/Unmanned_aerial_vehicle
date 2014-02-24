@@ -176,24 +176,6 @@ int check_command_altitude (accepted_command_t command_name, float altitude)
 			}
 #endif
 			break;
-		case accepted_command_rth:
-#ifdef MIN_RTH_ALTITUDE
-			if (altitude < MIN_RTH_ALTITUDE)
-			{
-				fprintf (stderr, "Invalid property \'altitude\' in command tag of type \'%s\'\n", accepted_command_to_string(command_name));
-				fprintf (stderr, "It must be a positive number grater than %d meters\n", MIN_RTH_ALTITUDE);
-				return -1;
-			}
-#endif
-#ifdef MAX_RTH_ALTITUDE
-			if (altitude > MAX_RTH_ALTITUDE)
-			{
-				fprintf (stderr, "Invalid property \'altitude\' in command tag of type \'%s\'\n", accepted_command_to_string(command_name));
-				fprintf (stderr, "It must be a positive number less than %d meters\n", MAX_RTH_ALTITUDE);
-				return -1;
-			}
-#endif
-			break;
 
 		case accepted_command_takeoff:
 #ifdef MIN_TAKEOFF_ALTITUDE
@@ -274,7 +256,7 @@ int check_command_altitude (accepted_command_t command_name, float altitude)
 		default:
 			// Command name not accepted in command tag
 			fprintf (stderr, "Invalid property \'name\' for command tag\n");
-			fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,rth,takeoff,land]\n");
+			fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,takeoff,land]\n");
 			return -1;
 	}
 	

@@ -5,9 +5,7 @@
 
 	#include "../uav_library/common.h"
 	
-	#define STARTING_FLIGHT_MODE	flight_mode_manual
-	
-	
+
 	/* function prototypes */
 	//empty
 	

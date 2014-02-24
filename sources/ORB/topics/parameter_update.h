@@ -39,23 +39,24 @@
 #ifndef TOPIC_PARAMETER_UPDATE_H
 #define TOPIC_PARAMETER_UPDATE_H
 
-#include <stdint.h>
-#include "../uORB.h"
+	#include <stdint.h>
+	#include "../ORB.h"
+	#include "../../uav_library/time/drv_time.h"
 
-/**
- * @addtogroup topics
- * @{
- */
+	/**
+	 * @addtogroup topics
+	 * @{
+	 */
 
-struct parameter_update_s {
-	/** time at which the latest parameter was updated */
-	uint64_t	timestamp;
-};
+	struct parameter_update_s {
+		/** time at which the latest parameter was updated */
+		absolute_time	timestamp;
+	};
 
-/**
- * @}
- */
+	/**
+	 * @}
+	 */
 
-ORB_DECLARE(parameter_update);
+	ORB_DECLARE(parameter_update);
 
 #endif

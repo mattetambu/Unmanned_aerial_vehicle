@@ -135,7 +135,7 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 	if (command_name_decode (property, &command->name) < 0)
 	{
 		fprintf (stderr, "Invalid property \'name\' in command tag\n");
-		fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,rth,takeoff,land]\n");
+		fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,takeoff,land]\n");
 		return -1;
 	}
 	
@@ -152,7 +152,6 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 	switch (command->name)
 	{
 		case accepted_command_rtl:
-		case accepted_command_rth:
 		case accepted_command_takeoff:
 		case accepted_command_land:
 			break;
@@ -231,7 +230,7 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 		default:
 			// Command name not accepted in command tag
 			fprintf (stderr, "Invalid property \'name\' for command tag\n");
-			fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,rth,takeoff,land]\n");
+			fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,takeoff,land]\n");
 			return -1;
 	}
 

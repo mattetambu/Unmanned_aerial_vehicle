@@ -11,7 +11,7 @@
 #include "../../ORB/ORB.h"
 #include "../../ORB/topics/airspeed.h"
 #include "../../ORB/topics/vehicle_attitude.h"
-#include "../../ORB/topics/vehicle_global_position.h"
+#include "../../ORB/topics/position/vehicle_global_position.h"
 #include "../../ORB/topics/actuator/actuator_controls.h"
 
 pthread_t printer_thread_id;

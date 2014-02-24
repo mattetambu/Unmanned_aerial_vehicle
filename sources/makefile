@@ -13,7 +13,8 @@ CONSOLE_CONTROLLER_SOURCES = ./uav_library/console_controller/*.c
 IO_CTRL_SOURCES = ./uav_library/io_ctrl/*.c
 DISPLAY_SOURCES = ./uav_library/display/*.c ./uav_library/display/GUI/*.c
 TIME_SOURCES = ./uav_library/time/*.c
-LIBRARY_SOURCES = $(CONSOLE_CONTROLLER_SOURCES) $(IO_CTRL_SOURCES) $(DISPLAY_SOURCES) $(TIME_SOURCES)
+PARAM_SOURCES = ./uav_library/param/*.c
+LIBRARY_SOURCES = $(CONSOLE_CONTROLLER_SOURCES) $(IO_CTRL_SOURCES) $(DISPLAY_SOURCES) $(TIME_SOURCES) $(PARAM_SOURCES)
 
 SOURCES = ./*.c $(AUTOPILOT_SOURCES) $(MISSION_SOURCES) $(ORB_SOURCES) $(SIMULATOR_SOURCES) $(LIBRARY_SOURCES)
 executable_name = UAV_autopilot

@@ -80,6 +80,13 @@ orb_controller_init (struct orb_metadata *meta)
 	if (!meta->obj_controller)
 	{
 		meta->obj_controller = malloc (sizeof(orb_controller_t));
+		if (meta->obj_controller == NULL)
+		{
+			fprintf (stderr, "Impossible to allocate memory (malloc error)\n");
+			
+			// release the lock on the topic and return the error
+			ORB_UNLOCK_TOPIC_AND_RETURN (&orb_init_lock, -1);
+		}
 		memset (meta->obj_controller, 0, sizeof(orb_controller_t));
 		pthread_mutex_init (&meta->obj_controller->_lock, NULL);
 		if (!meta->obj_controller->_lock)
@@ -337,7 +344,7 @@ orb_publish (const struct orb_metadata *meta, orb_advert_t advertiser, const voi
 	int i;
 	absolute_time delta_time;
 	
-	if (orb_check_advertiser (meta, advertiser, "publish", pthread_self()) < 0)
+	if (!meta->free_publish && orb_check_advertiser (meta, advertiser, "publish", pthread_self()) < 0)
 		// already printed an error message
 		return -1;
 	
@@ -526,9 +533,11 @@ int
 orb_stat (const struct orb_metadata *meta, orb_subscr_t subscriber, absolute_time *last_publish)
 {
 	if (orb_check_subscriber (meta, subscriber, "get orb stat", pthread_self()) < 0)
+	{
 		// already printed an error message
+		*last_publish = 0;
 		return -1;
-	
+	}
 	// obtain the lock on the topic for the critical section
 	ORB_LOCK_TOPIC (&meta->obj_controller->_lock);
 	

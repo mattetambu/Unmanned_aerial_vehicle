@@ -25,11 +25,6 @@
 		double latitude;			/**< Latitude */
 		double longitude;			/**< Longitude */
 		float altitude;				/**< Altitude above MSL */
-		
-		float eph_m;				/**< GPS HDOP horizontal dilution of position in m */
-		float epv_m;				/**< GPS VDOP horizontal dilution of position in m */
-		float s_variance_m_s;		/**< speed accuracy estimate m/s */
-		float p_variance_m;			/**< position accuracy estimate m */
 	};
 
 	/**

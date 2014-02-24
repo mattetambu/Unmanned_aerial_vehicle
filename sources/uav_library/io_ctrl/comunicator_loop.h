@@ -14,7 +14,7 @@
 	void* comunicator_loop (void* args);
 	
 	/* global variables */
-	extern pthread_t primary_thread_id;
-	extern int primary_thread_return_value;
+	extern pthread_t comunicator_thread_id;
+	extern int comunicator_thread_return_value;
 	
 #endif

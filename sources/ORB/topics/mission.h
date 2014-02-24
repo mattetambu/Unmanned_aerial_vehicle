@@ -198,7 +198,6 @@
 		accepted_command_waypoint,
 		accepted_command_loiter,
 		accepted_command_rtl,
-		accepted_command_rth,
 		accepted_command_takeoff,
 		accepted_command_land,
 		// controls
@@ -223,7 +222,6 @@
 			return_custom_enum_string (accepted_command_waypoint, "waypoint");
 			return_custom_enum_string (accepted_command_loiter, "loiter");
 			return_custom_enum_string (accepted_command_rtl, "rtl");
-			return_custom_enum_string (accepted_command_rth, "rth");
 			return_custom_enum_string (accepted_command_takeoff, "takeoff");
 			return_custom_enum_string (accepted_command_land, "land");
 			// controls

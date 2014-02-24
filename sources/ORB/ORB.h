@@ -47,6 +47,7 @@
 		const char *o_name;		/**< unique object name */
 		const size_t o_size;		/**< object size */
 		void *topic_s;			/**< pointer to the orb topic structure */
+		bool_t free_publish;	/**< if true no strict pid control will be done for advertisers */
 		orb_controller_t *obj_controller;	/**< object controller */
 	};
 
@@ -105,9 +106,18 @@
 			#_name,				\
 			sizeof(_struct),	\
 			(void *) &__##_name,	\
+			0,					\
 			NULL				\
 		}; struct hack
 
+	#define ORB_DEFINE_FREE_PUBLISH(_name, _struct)	\
+		struct orb_metadata __orb_##_name = {	\
+			#_name,				\
+			sizeof(_struct),	\
+			(void *) &__##_name,	\
+			1,					\
+			NULL				\
+		}; struct hack
 	
 	/* function prototypes */
 	void system_orb_init ();

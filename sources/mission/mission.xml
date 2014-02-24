@@ -11,7 +11,7 @@
 		<control name="set" variable="speed" mode="relative" value="15"/>
 		<control name="set" variable="altitude" mode="relative" value="15"/>
 		<control name="if" variable="wp_eta" condition="grater" value="65">
-			<command name="rth" id="14"/>
+			<command name="rtl" id="14"/>
 			<control id="5" name="delay" seconds="20"/>
 		</control>
 	</control>

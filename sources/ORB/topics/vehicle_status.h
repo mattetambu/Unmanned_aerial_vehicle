@@ -15,6 +15,7 @@
 
 	#include <stdint.h>
 	#include "../ORB.h"
+	#include "../../uav_library/common.h"
 
 	
 	/**
@@ -30,32 +31,30 @@
 	} main_flight_mode_t;
 
 	/* exact flight mode */
-	typedef enum exact_flight_mode_t
+	typedef enum sub_flight_mode_t
 	{
-		exact_flight_mode_manual,
-		exact_flight_mode_assist,
-		exact_flight_mode_stabilize,
-		exact_flight_mode_fly_by_wire,
-		exact_flight_mode_loiter,
-		exact_flight_mode_fly_to,
-		exact_flight_mode_rtl,
-		exact_flight_mode_rth,
-		exact_flight_mode_mission
-	} exact_flight_mode_t;
+		sub_flight_mode_manual,
+		sub_flight_mode_stabilize,
+		sub_flight_mode_fly_by_wire,
+		sub_flight_mode_easy,
+		sub_flight_mode_loiter,
+		sub_flight_mode_fly_to,
+		sub_flight_mode_rtl,
+		sub_flight_mode_mission
+	} sub_flight_mode_t;
 
-	inline static const char* exact_flight_mode_to_string (exact_flight_mode_t index)
+	inline static const char* sub_flight_mode_to_string (sub_flight_mode_t index)
 	{
 		switch(index)
 		{
-			return_custom_enum_string (exact_flight_mode_manual, "manual");
-			return_custom_enum_string (exact_flight_mode_assist, "assist");
-			return_custom_enum_string (exact_flight_mode_stabilize, "stabilize");
-			return_custom_enum_string (exact_flight_mode_fly_by_wire, "fly_by_wire");
-			return_custom_enum_string (exact_flight_mode_loiter, "loiter");
-			return_custom_enum_string (exact_flight_mode_fly_to, "fly_to");
-			return_custom_enum_string (exact_flight_mode_rtl, "rtl");
-			return_custom_enum_string (exact_flight_mode_rth, "rth");
-			return_custom_enum_string (exact_flight_mode_mission, "mission");
+			return_custom_enum_string (sub_flight_mode_manual, "manual");
+			return_custom_enum_string (sub_flight_mode_stabilize, "stabilize");
+			return_custom_enum_string (sub_flight_mode_fly_by_wire, "fly_by_wire");
+			return_custom_enum_string (sub_flight_mode_easy, "easy");
+			return_custom_enum_string (sub_flight_mode_loiter, "loiter");
+			return_custom_enum_string (sub_flight_mode_fly_to, "fly_to");
+			return_custom_enum_string (sub_flight_mode_rtl, "rtl");
+			return_custom_enum_string (sub_flight_mode_mission, "mission");
 			default: return NULL;
 		}
 	}
@@ -93,21 +92,43 @@
 		}
 	}
 
+	/* arming machine */
+	typedef enum arming_state_t
+	{
+		arming_state_init = 0,
+		arming_state_standby,
+		arming_state_standby_error,
+		arming_state_armed,
+		arming_state_armed_error,
+		arming_state_in_air_restore,
+		arming_state_reboot
+	} arming_state_t;
+
+	inline static const char* arming_state_to_string (arming_state_t index)
+	{
+		switch(index)
+		{
+			return_custom_enum_string (arming_state_init, "init");
+			return_custom_enum_string (arming_state_standby, "standby");
+			return_custom_enum_string (arming_state_standby_error, "standby_error");
+			return_custom_enum_string (arming_state_armed, "armed");
+			return_custom_enum_string (arming_state_armed_error, "armed_error");
+			return_custom_enum_string (arming_state_in_air_restore, "in_air_restore");
+			return_custom_enum_string (arming_state_reboot, "reboot");
+			default: return NULL;
+		}
+	}
+
 	/* finite state machine */
 	typedef enum finite_state_machine_t
 	{
 		finite_state_machine_preflight = 0,
-		finite_state_machine_standby,
-		finite_state_machine_standby_error,
-		finite_state_machine_armed,
-		finite_state_machine_armed_error,
+		finite_state_machine_arming,
 		finite_state_machine_in_flight,
 		finite_state_machine_warning_recover,
 		finite_state_machine_mission_abort,
 		finite_state_machine_emergency_landing,
-		finite_state_machine_emergency_cutoff,
-		finite_state_machine_in_air_restore,
-		finite_state_machine_reboot
+		finite_state_machine_emergency_cutoff
 	} finite_state_machine_t;
 
 	inline static const char* finite_state_machine_to_string (finite_state_machine_t index)
@@ -115,17 +136,12 @@
 		switch(index)
 		{
 			return_custom_enum_string (finite_state_machine_preflight, "preflight");
-			return_custom_enum_string (finite_state_machine_standby, "standby");
-			return_custom_enum_string (finite_state_machine_standby_error, "standby_error");
-			return_custom_enum_string (finite_state_machine_armed, "armed");
-			return_custom_enum_string (finite_state_machine_armed_error, "armed_error");
+			return_custom_enum_string (finite_state_machine_arming, "arming");
 			return_custom_enum_string (finite_state_machine_in_flight, "in_flight");
 			return_custom_enum_string (finite_state_machine_warning_recover, "warning_recover");
 			return_custom_enum_string (finite_state_machine_mission_abort, "mission_abort");
 			return_custom_enum_string (finite_state_machine_emergency_landing, "emergency_landing");
 			return_custom_enum_string (finite_state_machine_emergency_cutoff, "emergency_cutoff");
-			return_custom_enum_string (finite_state_machine_in_air_restore, "in_air_restore");
-			return_custom_enum_string (finite_state_machine_reboot, "reboot");
 			default: return NULL;
 		}
 	}
@@ -193,30 +209,39 @@
 	struct vehicle_status_s
 	{
 		main_flight_mode_t main_flight_mode;			/**< main flight mode */
-		exact_flight_mode_t exact_flight_mode;			/**< exact flight mode */
+		sub_flight_mode_t sub_flight_mode;			/**< exact flight mode */
 		navigation_state_t navigation_state;			/**< navigation state */
+		arming_state_t arming_state;					/**< arming state */
 		finite_state_machine_t finite_state_machine;	/**< finite state machine */
 		hil_state_t hil_state;							/**< current hil state */
+
 		battery_warning_t battery_warning;				/**< current battery warning mode, as defined by VEHICLE_BATTERY_WARNING enum */
+		int battery_remaining;
 		
-		int32_t system_type;			/**< system type, inspired by MAVLink's VEHICLE_TYPE enum */
-		int32_t	system_id;				/**< system id, inspired by MAVLink's system ID field */
-		int32_t component_id;			/**< subsystem / component id, inspired by MAVLink's component ID field */
+		//int32_t system_type;			/**< system type, inspired by MAVLink's VEHICLE_TYPE enum */
+		//int32_t system_id;				/**< system id, inspired by MAVLink's system ID field */
+		//int32_t component_id;			/**< subsystem / component id, inspired by MAVLink's component ID field */
+		bool_t is_rotary_wing;
 
-		bool condition_auto_mission_available;
-		bool condition_global_position_valid;		/**< set to true by the commander app if the quality of the gps signal is good enough to use it in the position estimator */
-		bool condition_local_position_valid;
-		bool condition_launch_position_valid;		/**< indicates a valid launch position */
-		bool condition_home_position_valid;			/**< indicates a valid home position (a valid home position is not always a valid launch) */
-		bool condition_local_altitude_valid;
-		bool condition_airspeed_valid;				/**< set to true by the commander app if there is a valid airspeed measurement available */
+		bool_t condition_auto_mission_available;
+		bool_t condition_global_position_valid;		/**< set to true by the commander app if the quality of the gps signal is good enough to use it in the position estimator */
+		bool_t condition_local_position_valid;
+		bool_t condition_launch_position_valid;		/**< indicates a valid launch position */
+		bool_t condition_home_position_valid;			/**< indicates a valid home position (a valid home position is not always a valid launch) */
+		bool_t condition_local_altitude_valid;
+		bool_t condition_airspeed_valid;				/**< set to true by the commander app if there is a valid airspeed measurement available */
 		
-		bool condition_system_returned_to_home;
-		bool condition_landed;						/**< true if vehicle is landed, always true if disarmed */
-		bool condition_battery_voltage_valid;
+		bool_t condition_system_returned_to_home;
+		bool_t condition_landed;						/**< true if vehicle is landed, always true if disarmed */
+		bool_t condition_battery_voltage_valid;
 
-		bool condition_system_sensors_initialized;
-		bool condition_system_in_air_restore;		/**< true if we can restore in mid air */
+		bool_t condition_system_sensors_initialized;
+		bool_t condition_system_in_air_restore;		/**< true if we can restore in mid air */
+
+		/* see SYS_STATUS mavlink message for the following */
+		uint32_t onboard_control_sensors_present;
+		uint32_t onboard_control_sensors_enabled;
+		uint32_t onboard_control_sensors_health;
 	};
 
 	/**

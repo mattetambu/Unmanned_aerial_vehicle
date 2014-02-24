@@ -7,7 +7,8 @@
 #define TOPIC_VEHICLE_GLOBAL_POSITION_H_
 
 	#include <stdint.h>
-	#include "../ORB.h"
+	#include "../../ORB.h"
+	#include "../../../uav_library/common.h"
 
 	/**
 	 * @addtogroup topics
@@ -33,6 +34,7 @@
 		float altitude;				/**< Altitude above MSL */
 		//float relative_altitude;	/**< Altitude above home position in meters */
 		float ground_level;			/**< Must be set to current ground level */
+		bool_t landed;				/**< true if vehicle is landed */
 
 		float vx;					/**< Ground X velocity, m/s in NED */
 		float vy;					/**< Ground Y velocity, m/s in NED */

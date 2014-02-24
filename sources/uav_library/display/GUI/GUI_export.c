@@ -11,21 +11,29 @@
 
 #include "../../../ORB/ORB.h"
 #include "../../../ORB/topics/airspeed.h"
-#include "../../../ORB/topics/vehicle_attitude.h"
-#include "../../../ORB/topics/vehicle_global_position.h"
-#include "../../../ORB/topics/actuator/actuator_controls.h"
 #include "../../../ORB/topics/mission.h"
+#include "../../../ORB/topics/safety.h"
+#include "../../../ORB/topics/vehicle_attitude.h"
+#include "../../../ORB/topics/home_position.h"
+#include "../../../ORB/topics/takeoff_position.h"
+#include "../../../ORB/topics/position/vehicle_global_position.h"
+#include "../../../ORB/topics/actuator/actuator_controls.h"
+#include "../../../ORB/topics/actuator/actuator_armed.h"
 
 
 GtkWidget *main_window;
 GtkWidget *properties_text_conteiners[FDM_N_PROPERTIES];
 GtkWidget *controls_text_conteiners[CTRL_N_CONTROLS];
+GtkWidget *safety_status_text_conteiners[GUI_SAFETY_STATUS_N_ENTRIES];
+GtkWidget *waypoint_entries[GUI_WAYPOINT_N_ENTRIES];
 
 // flight data and mission textview updater
 guint flight_data_updater_id;
 guint mission_textview_updater_id;
 pthread_t mission_textview_updater_pid = 0;
 pthread_t flight_data_updater_pid = 0;
+bool_t GUI_flight_data_updater_initialized = 0;
+bool_t GUI_mission_textview_updater_initialized = 0;
 
 // topic subscriptions
 orb_subscr_t GUI_mission_sub = -1;	/* Subscription to mission topic */
@@ -34,7 +42,11 @@ orb_subscr_t GUI_airspeed_sub = -1;	/* Subscription to airspeed topic */
 orb_subscr_t GUI_vehicle_global_position_sub = -1;	/* Subscription to vehicle_global_position topic */
 orb_subscr_t GUI_vehicle_attitude_sub = -1;	/* Subscription to vehicle_attitude topic */
 orb_subscr_t GUI_actuator_controls_sub = -1;	/* Subscription to actuator_controls topic */
-
+orb_subscr_t GUI_actuator_armed_sub = -1;	/* Subscription to actuator_armed topic */
+orb_subscr_t GUI_safety_sub = -1;	/* Subscription to safety topic */
+orb_subscr_t GUI_home_position_sub = -1;	/* Subscription to home_position topic */
+orb_subscr_t GUI_takeoff_position_sub = -1;	/* Subscription to takeoff_position topic */
+struct vehicle_global_position_s GUI_vehicle_global_position;
 
 
 int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, int text_length)
@@ -78,7 +90,6 @@ int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, 
 	switch (command->name)
 	{
 		case accepted_command_rtl:
-		case accepted_command_rth:
 		case accepted_command_takeoff:
 		case accepted_command_land:
 			if (command->option1 > 0)
@@ -209,7 +220,7 @@ void textview_buffer_fill_with_string (GtkTextBuffer *buffer, gchar *text_row, i
 	gtk_text_buffer_insert (buffer, &iter, text_row, text_length);
 }
 
-int mission_textview_fill (GtkTextView * mission_textview, struct mission_s *local_mission) {
+int mission_textview_fill (GtkTextView * mission_textview, struct mission_s *mission) {
 	gchar text_row [MAX_TEXT_ROW_LENGTH];
 	int text_length;
 	GtkTextBuffer *buffer;
@@ -232,13 +243,13 @@ int mission_textview_fill (GtkTextView * mission_textview, struct mission_s *loc
 	buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (mission_textview));
 
 	text_length = snprintf ((char *) text_row, MAX_TEXT_ROW_LENGTH, "* mission  mode=%s  lastly=%s \n",
-						mission_mode_to_string(local_mission->mode),
-						mission_lastly_cmd_to_string(local_mission->lastly));
+						mission_mode_to_string(mission->mode),
+						mission_lastly_cmd_to_string(mission->lastly));
 	textview_buffer_fill_with_string (buffer, text_row, text_length);
 
-	for (index = 0; index < local_mission->n_commands; index++)
+	for (index = 0; index < mission->n_commands; index++)
 	{
-		text_length = buffer_print_mission_command (&local_mission->command_list[index], (char*) text_row, MAX_TEXT_ROW_LENGTH);
+		text_length = buffer_print_mission_command (&mission->command_list[index], (char*) text_row, MAX_TEXT_ROW_LENGTH);
 		if (text_length < 0)
 		{
 			fprintf (stderr , "Failed to plot a mission command\n");
@@ -261,7 +272,7 @@ int mission_textview_fill (GtkTextView * mission_textview, struct mission_s *loc
 int init_mission_textview_updater (gpointer user_data)
 {
 	GtkTextView * mission_textview = (GtkTextView *) user_data;
-	struct mission_s local_mission;
+	struct mission_s mission;
 	int mission_wrv;
 	
 	// GUI is closing
@@ -279,15 +290,15 @@ int init_mission_textview_updater (gpointer user_data)
 		}
 
 		mission_wrv = orb_wait (ORB_ID(mission), GUI_mission_sub);
-		if (mission_wrv < 0 /* && !getenv ("GUI_STOPPED") */)
+		if (mission_wrv < 0 && !getenv ("GUI_STOPPED"))
 		{
 			fprintf (stderr, "GUI thread experienced an error waiting for mission topic\n");
 			return -1;
 		}
 		else if (mission_wrv)
-			orb_copy (ORB_ID(mission), GUI_mission_sub, (void *) &local_mission);
+			orb_copy (ORB_ID(mission), GUI_mission_sub, (void *) &mission);
 		
-		if (mission_textview_fill ((GtkTextView *) mission_textview, &local_mission) < 0)
+		if (mission_textview_fill ((GtkTextView *) mission_textview, &mission) < 0)
 		{
 			fprintf (stderr, "Failed to fill the GUI mission textbox\n");
 			return -1;
@@ -298,7 +309,7 @@ int init_mission_textview_updater (gpointer user_data)
 	{
 		// ********************** Subscribe to mission_small topics ******************************
 		GUI_mission_small_sub = orb_subscribe (ORB_ID(mission_small));
-		if (GUI_mission_small_sub < 0)
+		if (GUI_mission_small_sub < 0 && !getenv ("GUI_STOPPED"))
 		{
 			fprintf (stderr, "Failed to subscribe to mission topic\n");
 			return -1;
@@ -318,7 +329,7 @@ int GUI_mission_textview_update (gpointer user_data)
 	int mission_small_prv;
 	absolute_time usec_max_poll_wait_time = 250000;
 	// topic data
-	struct mission_small_s local_mission_small;
+	struct mission_small_s mission_small;
 
 	if (!getenv("START_GUI") || getenv("GUI_STOPPED"))
 		return 0;
@@ -331,31 +342,32 @@ int GUI_mission_textview_update (gpointer user_data)
 		return 0;
 	}
 
-	if (GUI_mission_sub == -1 || GUI_mission_small_sub == -1)
+	if (!GUI_mission_textview_updater_initialized)
 	{
 		if (init_mission_textview_updater (user_data) < 0)
 		{
 			fprintf (stdout, "Failed to initialize the mission textview\n");
 			return 0;
 		}
+		GUI_mission_textview_updater_initialized = 1;
 	}
 	
 	mission_small_prv = orb_poll (ORB_ID(mission_small), GUI_mission_small_sub, usec_max_poll_wait_time);
-	if (mission_small_prv < 0 /* && !getenv ("GUI_STOPPED") */)
+	if (mission_small_prv < 0 && !getenv ("GUI_STOPPED"))
 	{
 		fprintf (stderr, "GUI thread experienced an error waiting for mission_small topic\n");
 		return 0;
 	}
 	else if (mission_small_prv)
 	{
-		orb_copy (ORB_ID(mission_small), GUI_mission_small_sub, (void *) &local_mission_small);
+		orb_copy (ORB_ID(mission_small), GUI_mission_small_sub, (void *) &mission_small);
 		//fprintf (stdout, "GUI thread successfully copy the mission_small after poll\n");
 		//fflush (stdout);
 		
 		// get GTK thread lock
 		gdk_threads_enter ();
 
-		// do the update - xxx not yet implemented
+		// do the update - XXX not yet implemented
 		//fprintf (stdout, "GUI thread successfully copy the mission for mission textview update\n");
 		//fflush (stdout);
 
@@ -417,6 +429,51 @@ int init_flight_data_updater ()
 		}
 	}
 	
+	if (GUI_safety_sub == -1)
+	{
+		// ********************** Subscribe to safety topic ******************************
+		GUI_safety_sub = orb_subscribe (ORB_ID(safety));
+		if (GUI_safety_sub < 0)
+		{
+			fprintf (stderr, "Failed to subscribe to safety topic\n");
+			return -1;
+		}
+	}
+
+	if (GUI_actuator_armed_sub == -1)
+	{
+		// ********************** Subscribe to actuator_armed topic ******************************
+		GUI_actuator_armed_sub = orb_subscribe (ORB_ID(actuator_armed));
+		if (GUI_actuator_armed_sub < 0)
+		{
+			fprintf (stderr, "Failed to subscribe to actuator_armed topic\n");
+			return -1;
+		}
+	}
+
+	if (GUI_home_position_sub == -1)
+	{
+		// ********************** Subscribe to home_position topic ******************************
+		GUI_home_position_sub = orb_subscribe (ORB_ID(home_position));
+		if (GUI_home_position_sub < 0)
+		{
+			fprintf (stderr, "Failed to subscribe to home_position topic\n");
+			return -1;
+		}
+	}
+
+	if (GUI_takeoff_position_sub == -1)
+	{
+		// ********************** Subscribe to takeoff_position topic ******************************
+		GUI_takeoff_position_sub = orb_subscribe (ORB_ID(takeoff_position));
+		if (GUI_takeoff_position_sub < 0)
+		{
+			fprintf (stderr, "Failed to subscribe to takeoff_position topic\n");
+			return -1;
+		}
+	}
+
+
 	flight_data_updater_pid = pthread_self();
 	
 	return 0;
@@ -427,25 +484,30 @@ int GUI_flight_data_update ()
 	int i;
 	
 	// orb data (prv means poll_return_value)
-	int airspeed_prv, vehicle_global_position_prv, vehicle_attitude_prv, actuator_controls_prv = 0;
+	int airspeed_prv, vehicle_global_position_prv, vehicle_attitude_prv, actuator_controls_prv;
+	int safety_crv, actuator_armed_crv, home_position_crv, takeoff_position_crv;
 	absolute_time usec_max_poll_wait_time = 100000;
 	
 	// topics data
-	struct airspeed_s local_airspeed;
-	struct vehicle_global_position_s local_vehicle_global_position;
-	struct vehicle_attitude_s local_vehicle_attitude;
-	struct actuator_controls_s local_actuator_controls;
+	struct airspeed_s airspeed;
+	struct vehicle_attitude_s vehicle_attitude;
+	struct actuator_controls_s actuator_controls;
+	struct actuator_armed_s actuator_armed;
+	struct home_position_s home_position;
+	struct takeoff_position_s takeoff_position;
+	struct safety_s safety;
 	
 	if (!getenv("START_GUI") || getenv("GUI_STOPPED"))
 		return 0;
 
-	if (GUI_airspeed_sub == -1 || GUI_vehicle_global_position_sub == -1 || GUI_vehicle_attitude_sub == -1 || GUI_actuator_controls_sub == -1)
+	if (!GUI_flight_data_updater_initialized)
 	{
 		if (init_flight_data_updater () < 0)
 		{
 			fprintf (stdout, "Failed to initialize the GUI for flight data export\n");
 			return 0;
 		}
+		GUI_flight_data_updater_initialized = 1;
 	}
 	
 	airspeed_prv = orb_poll (ORB_ID(airspeed), GUI_airspeed_sub, usec_max_poll_wait_time);
@@ -455,7 +517,7 @@ int GUI_flight_data_update ()
 		return 0;
 	}
 	else if (airspeed_prv)
-		orb_copy (ORB_ID(airspeed), GUI_airspeed_sub, (void *) &local_airspeed);
+		orb_copy (ORB_ID(airspeed), GUI_airspeed_sub, (void *) &airspeed);
 	
 	vehicle_global_position_prv = orb_poll (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, usec_max_poll_wait_time);
 	if (vehicle_global_position_prv < 0 /* && !getenv ("GUI_STOPPED") */)
@@ -464,7 +526,7 @@ int GUI_flight_data_update ()
 		return 0;
 	}
 	else if (vehicle_global_position_prv)
-		orb_copy (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, (void *) &local_vehicle_global_position);
+		orb_copy (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, (void *) &GUI_vehicle_global_position);
 	
 	vehicle_attitude_prv = orb_poll (ORB_ID(vehicle_attitude), GUI_vehicle_attitude_sub, usec_max_poll_wait_time);
 	if (vehicle_attitude_prv < 0 /* && !getenv ("GUI_STOPPED") */)
@@ -473,8 +535,8 @@ int GUI_flight_data_update ()
 		return 0;
 	}
 	else if (vehicle_attitude_prv)
-		orb_copy (ORB_ID(vehicle_attitude), GUI_vehicle_attitude_sub, (void *) &local_vehicle_attitude);
-	
+		orb_copy (ORB_ID(vehicle_attitude), GUI_vehicle_attitude_sub, (void *) &vehicle_attitude);
+
 	actuator_controls_prv = orb_poll (ORB_ID(actuator_controls), GUI_actuator_controls_sub, usec_max_poll_wait_time);
 	if (actuator_controls_prv < 0 /* && !getenv ("GUI_STOPPED") */)
 	{
@@ -482,7 +544,43 @@ int GUI_flight_data_update ()
 		return 0;
 	}
 	else if (actuator_controls_prv)
-		orb_copy (ORB_ID(actuator_controls), GUI_actuator_controls_sub, (void *) &local_actuator_controls);
+		orb_copy (ORB_ID(actuator_controls), GUI_actuator_controls_sub, (void *) &actuator_controls);
+
+	safety_crv = orb_check (ORB_ID(safety), GUI_safety_sub);
+	if (safety_crv < 0 /* && !getenv ("GUI_STOPPED") */)
+	{
+		fprintf (stderr, "GUI thread experienced an error waiting for safety topic\n");
+		return 0;
+	}
+	else if (safety_crv)
+		orb_copy (ORB_ID(safety), GUI_safety_sub, (void *) &safety);
+
+	actuator_armed_crv = orb_check (ORB_ID(actuator_armed), GUI_actuator_armed_sub);
+	if (actuator_armed_crv < 0 /* && !getenv ("GUI_STOPPED") */)
+	{
+		fprintf (stderr, "GUI thread experienced an error waiting for actuator_armed topic\n");
+		return 0;
+	}
+	else if (actuator_armed_crv)
+		orb_copy (ORB_ID(actuator_armed), GUI_actuator_armed_sub, (void *) &actuator_armed);
+
+	home_position_crv = orb_check (ORB_ID(home_position), GUI_home_position_sub);
+	if (home_position_crv < 0 /* && !getenv ("GUI_STOPPED") */)
+	{
+		fprintf (stderr, "GUI thread experienced an error waiting for home_position topic\n");
+		return 0;
+	}
+	else if (home_position_crv)
+		orb_copy (ORB_ID(home_position), GUI_home_position_sub, (void *) &home_position);
+
+	takeoff_position_crv = orb_check (ORB_ID(takeoff_position), GUI_takeoff_position_sub);
+	if (takeoff_position_crv < 0 /* && !getenv ("GUI_STOPPED") */)
+	{
+		fprintf (stderr, "GUI thread experienced an error waiting for takeoff_postion topic\n");
+		return 0;
+	}
+	else if (takeoff_position_crv)
+		orb_copy (ORB_ID(takeoff_position), GUI_takeoff_position_sub, (void *) &takeoff_position);
 
 
 	// get GTK thread lock
@@ -504,34 +602,34 @@ int GUI_flight_data_update ()
 
 	if (vehicle_attitude_prv /* && !getenv ("GUI_STOPPED") */)
 	{
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ROLL_ANGLE]), g_strdup_printf ("%.6f", local_vehicle_attitude.roll));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_PITCH_ANGLE]), g_strdup_printf ("%.6f", local_vehicle_attitude.pitch));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_YAW_ANGLE]), g_strdup_printf ("%.6f", local_vehicle_attitude.yaw));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ROLL_RATE]), g_strdup_printf ("%.6f", local_vehicle_attitude.roll_rate));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_PITCH_RATE]), g_strdup_printf ("%.6f", local_vehicle_attitude.pitch_rate));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_YAW_RATE]), g_strdup_printf ("%.6f", local_vehicle_attitude.yaw_rate));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_BODY_VELOCITY]), g_strdup_printf ("%.6f", local_vehicle_attitude.vx));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Y_BODY_VELOCITY]), g_strdup_printf ("%.6f", local_vehicle_attitude.vy));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Z_BODY_VELOCITY]), g_strdup_printf ("%.6f", local_vehicle_attitude.vz));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_BODY_ACCELERATION]), g_strdup_printf ("%.6f", local_vehicle_attitude.ax));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Y_BODY_ACCELERATION]), g_strdup_printf ("%.6f", local_vehicle_attitude.ay));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Z_BODY_ACCELERATION]), g_strdup_printf ("%.6f", local_vehicle_attitude.az));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ENGINE_ROTATION_SPEED]), g_strdup_printf ("%.6f", local_vehicle_attitude.engine_rotation_speed));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ENGINE_THRUST]), g_strdup_printf ("%.6f", local_vehicle_attitude.thrust));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ROLL_ANGLE]), g_strdup_printf ("%.6f", vehicle_attitude.roll));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_PITCH_ANGLE]), g_strdup_printf ("%.6f", vehicle_attitude.pitch));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_YAW_ANGLE]), g_strdup_printf ("%.6f", vehicle_attitude.yaw));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ROLL_RATE]), g_strdup_printf ("%.6f", vehicle_attitude.roll_rate));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_PITCH_RATE]), g_strdup_printf ("%.6f", vehicle_attitude.pitch_rate));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_YAW_RATE]), g_strdup_printf ("%.6f", vehicle_attitude.yaw_rate));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_BODY_VELOCITY]), g_strdup_printf ("%.6f", vehicle_attitude.vx));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Y_BODY_VELOCITY]), g_strdup_printf ("%.6f", vehicle_attitude.vy));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Z_BODY_VELOCITY]), g_strdup_printf ("%.6f", vehicle_attitude.vz));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_BODY_ACCELERATION]), g_strdup_printf ("%.6f", vehicle_attitude.ax));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Y_BODY_ACCELERATION]), g_strdup_printf ("%.6f", vehicle_attitude.ay));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Z_BODY_ACCELERATION]), g_strdup_printf ("%.6f", vehicle_attitude.az));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ENGINE_ROTATION_SPEED]), g_strdup_printf ("%.6f", vehicle_attitude.engine_rotation_speed));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ENGINE_THRUST]), g_strdup_printf ("%.6f", vehicle_attitude.thrust));
 	}
 	if (airspeed_prv /* && !getenv ("GUI_STOPPED") */)
 	{
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_AIRSPEED]), g_strdup_printf ("%.6f", local_airspeed.indicated_airspeed_m_s));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_AIRSPEED]), g_strdup_printf ("%.6f", airspeed.indicated_airspeed_m_s));
 	}
 	if (vehicle_global_position_prv /* && !getenv ("GUI_STOPPED") */)
 	{
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LATITUDE]), g_strdup_printf ("%.10f", local_vehicle_global_position.latitude));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LONGITUDE]), g_strdup_printf ("%.10f", local_vehicle_global_position.longitude));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ALTITUDE]), g_strdup_printf ("%.6f", local_vehicle_global_position.altitude));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_GROUND_LEVEL]), g_strdup_printf ("%.6f", local_vehicle_global_position.ground_level));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_EARTH_VELOCITY]), g_strdup_printf ("%.6f", local_vehicle_global_position.vx));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Y_EARTH_VELOCITY]), g_strdup_printf ("%.6f", local_vehicle_global_position.vy));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Z_EARTH_VELOCITY]), g_strdup_printf ("%.6f", local_vehicle_global_position.vz));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LATITUDE]), g_strdup_printf ("%.10f", GUI_vehicle_global_position.latitude));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LONGITUDE]), g_strdup_printf ("%.10f", GUI_vehicle_global_position.longitude));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ALTITUDE]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.altitude));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_GROUND_LEVEL]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.ground_level));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_EARTH_VELOCITY]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.vx));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Y_EARTH_VELOCITY]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.vy));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_Z_EARTH_VELOCITY]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.vz));
 	}
 
 #ifdef GTK_MULTITHREAD			
@@ -555,10 +653,10 @@ int GUI_flight_data_update ()
 	{
 		if  (!getenv("DO_NOT_SEND_CONTROLS") /* && !getenv ("GUI_STOPPED") */)
 		{
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_AILERON]), g_strdup_printf ("%.6f", local_actuator_controls.aileron));
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_ELEVATOR]), g_strdup_printf ("%.6f", local_actuator_controls.elevator));
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_RUDDER]), g_strdup_printf ("%.6f", local_actuator_controls.rudder));
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_THROTTLE]), g_strdup_printf ("%.6f", local_actuator_controls.throttle));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_AILERON]), g_strdup_printf ("%.6f", actuator_controls.aileron));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_ELEVATOR]), g_strdup_printf ("%.6f", actuator_controls.elevator));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_RUDDER]), g_strdup_printf ("%.6f", actuator_controls.rudder));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_THROTTLE]), g_strdup_printf ("%.6f", (actuator_armed.armed)? actuator_controls.throttle : 0));
 		}
 		else if (1 /* && !getenv ("GUI_STOPPED") */)
 		{
@@ -572,7 +670,66 @@ int GUI_flight_data_update ()
 #ifdef GTK_MULTITHREAD
 	// unlock the controls_text_conteiners variable
 	G_UNLOCK (controls_text_conteiners);
+
+	// lock the safety_status_text_conteiners variable
+	G_LOCK_EXTERN (safety_status_text_conteiners);
 #endif
+
+	// safety check
+	// should not happen
+	for (i = 0; i < GUI_SAFETY_STATUS_N_ENTRIES; i++)
+		if (!safety_status_text_conteiners[i])
+		{
+			fprintf (stderr, "Failed to get the GUI safety status text container\n");
+			return 0;
+		}
+
+	if (safety_crv)
+	{
+		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_SAFETY]), g_strdup_printf ((safety.safety_off)? "OFF" : "ON"));
+	}
+
+	if (actuator_armed_crv)
+	{
+		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_ARMED]), g_strdup_printf ((actuator_armed.armed)? "ON" : "OFF"));
+		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_READY_TO_ARM]), g_strdup_printf ((actuator_armed.ready_to_arm)? "ON" : "OFF"));
+		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_LANDED]), g_strdup_printf ((GUI_vehicle_global_position.landed)? "TRUE" : "FALSE"));
+	}
+
+#ifdef GTK_MULTITHREAD
+	// unlock the safety_status_text_conteiners variable
+	G_UNLOCK (safety_status_text_conteiners);
+
+	// lock the waypoint_entries variable
+	G_LOCK_EXTERN (waypoint_entries);
+#endif
+
+	// safety check
+	// should not happen
+	for (i = 0; i < GUI_WAYPOINT_N_ENTRIES; i++)
+		if (!waypoint_entries[i])
+		{
+			fprintf (stderr, "Failed to get the GUI waypoint entries\n");
+			return 0;
+		}
+
+	if (home_position_crv)
+	{
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_HOME_WAYPOINT_LATITUDE_ENTRY]), g_strdup_printf ("%.8f", home_position.latitude));
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_HOME_WAYPOINT_LONGITUDE_ENTRY]), g_strdup_printf ("%.8f", home_position.longitude));
+	}
+
+	if (takeoff_position_crv)
+	{
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_TAKEOFF_WAYPOINT_LATITUDE_ENTRY]), g_strdup_printf ("%.8f", takeoff_position.latitude));
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_TAKEOFF_WAYPOINT_LONGITUDE_ENTRY]), g_strdup_printf ("%.8f", takeoff_position.longitude));
+	}
+
+#ifdef GTK_MULTITHREAD
+	// unlock the waypoint_entries variable
+	G_UNLOCK (waypoint_entries);
+#endif
+
 
 	// release GTK thread lock
 	gdk_threads_leave ();

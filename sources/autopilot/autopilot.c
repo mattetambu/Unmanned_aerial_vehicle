@@ -3,13 +3,15 @@
 #include <pthread.h>
 
 #include "autopilot.h"
+#include "commander.h"
 #include "autopilot_parameters.h"
 #include "../uav_library/common.h"
+#include "../uav_library/param/param.h"
 
 #include "../ORB/ORB.h"
 #include "../ORB/topics/airspeed.h"
 #include "../ORB/topics/vehicle_attitude.h"
-#include "../ORB/topics/vehicle_global_position.h"
+#include "../ORB/topics/position/vehicle_global_position.h"
 #include "../ORB/topics/actuator/actuator_controls.h"
 
 pthread_t autopilot_thread_id;
@@ -33,7 +35,7 @@ int compute_flight_controls ()
 	local_actuator_controls.aileron = -0.05*(local_vehicle_attitude.roll*57.2957795 - 0);
 	local_actuator_controls.elevator = 0.1*(local_vehicle_attitude.pitch*57.2957795 - 5);
 	local_actuator_controls.rudder = 0;
-	local_actuator_controls.throttle += 0.85;
+	local_actuator_controls.throttle = 0.95;
 
 	//Limit control inputs
 	if (fabs(local_actuator_controls.aileron) > 0.6)
@@ -48,6 +50,26 @@ int compute_flight_controls ()
 void* autopilot_loop (void* args)
 {
 	int wait_return_value;
+	pthread_t commander_thread_id;
+
+	// start commander
+	if (pthread_create (&commander_thread_id, NULL, commander_thread_main, NULL) != 0)
+	{
+		fprintf (stderr, "Can't create the commander thread (errno: %d)\n", errno);
+		exit(-1);
+	}
+
+
+	// XXX MAYBE TO MOVE
+	param_define_int("BAT_V_EMPTY", 3);
+	param_define_int("BAT_V_FULL", 6);
+	param_define_int("BAT_N_CELLS", 4);
+
+	param_define_float("TAKEOFF_ALT", 10);
+	param_define_float("LAND_TIME", 4.0f);
+	param_define_float("LAND_ALT", 2.0f); // XXX check this value
+	param_define_float("LAND_THRUST", 0.25f);
+
 
 	// ************************************* subscribe and advertise ******************************************
 	airspeed_sub = orb_subscribe (ORB_ID(airspeed));
@@ -167,6 +189,8 @@ void* autopilot_loop (void* args)
 		fprintf (stderr, "Failed to unadvertise the actuator_controls topic\n");
 	
 	
+	pthread_join (commander_thread_id, NULL);
+
 	pthread_exit(&autopilot_thread_return_value);
 	return 0;
 }

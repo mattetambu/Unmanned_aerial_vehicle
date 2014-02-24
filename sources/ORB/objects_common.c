@@ -42,9 +42,8 @@
  */
 
 #include "ORB.h"
+#include "../uav_library/common.h"
 
-#include "topics/airspeed.h"
-ORB_DEFINE(airspeed, struct airspeed_s);
 
 #include "topics/mission.h"
 ORB_DEFINE(mission, struct mission_s);
@@ -53,8 +52,44 @@ ORB_DEFINE(mission_small, struct mission_small_s);
 #include "topics/vehicle_attitude.h"
 ORB_DEFINE(vehicle_attitude, struct vehicle_attitude_s);
 
-#include "topics/vehicle_global_position.h"
-ORB_DEFINE(vehicle_global_position, struct vehicle_global_position_s);
+#include "topics/vehicle_status.h"
+ORB_DEFINE(vehicle_status, struct vehicle_status_s);
+
+#include "topics/vehicle_control_flags.h"
+ORB_DEFINE(vehicle_control_flags, struct vehicle_control_flags_s);
 
 #include "topics/actuator/actuator_controls.h"
 ORB_DEFINE(actuator_controls, struct actuator_controls_s);
+
+#include "topics/actuator/actuator_armed.h"
+ORB_DEFINE(actuator_armed, struct actuator_armed_s);
+
+#include "topics/manual_control_setpoint.h"
+ORB_DEFINE(manual_control_setpoint, struct manual_control_setpoint_s);
+
+#include "topics/vehicle_command.h"
+ORB_DEFINE(vehicle_command, struct vehicle_command_s);
+
+#include "topics/airspeed.h"
+ORB_DEFINE(airspeed, struct airspeed_s);
+
+#include "topics/position/vehicle_global_position.h"
+ORB_DEFINE(vehicle_global_position, struct vehicle_global_position_s);
+
+#include "topics/home_position.h"
+ORB_DEFINE(home_position, struct home_position_s);
+
+#include "topics/takeoff_position.h"
+ORB_DEFINE(takeoff_position, struct takeoff_position_s);
+
+#include "topics/parameter_update.h"
+ORB_DEFINE_FREE_PUBLISH(parameter_update, struct parameter_update_s);
+
+#include "topics/subsystem_info.h"
+ORB_DEFINE(subsystem_info, struct subsystem_info_s);
+
+#include "topics/battery_status.h"
+ORB_DEFINE(battery_status, struct battery_status_s);
+
+#include "topics/safety.h"
+ORB_DEFINE(safety, struct safety_s);

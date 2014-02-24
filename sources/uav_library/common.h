@@ -16,8 +16,7 @@
 	/**< xxx to be removed */
 	//#define DO_NOT_COMUNICATE
 	//#define INTERACTIVE
-	#define START_TEST_THREAD	0
-
+	#define START_TEST_THREAD	1
 
 	#ifndef NULL
 		#define NULL	((void*) 0)
@@ -42,6 +41,7 @@
 	typedef short unsigned int uint16_t;
 	typedef unsigned int uint32_t;
 	typedef unsigned long uint64_t;
+	typedef uint32_t bool_t;
 	
 	typedef struct map_point_t
 	{

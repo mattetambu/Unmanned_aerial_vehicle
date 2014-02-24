@@ -12,28 +12,43 @@
 #include "comunicator.h"
 #include "socket_io.h"
 #include "../common.h"
+#include "../param/param.h"
+#include "../time/drv_time.h"
 #include "../../simulator/FlightGear_exchanged_data.h"
 
 #include "../../ORB/ORB.h"
 #include "../../ORB/topics/airspeed.h"
+#include "../../ORB/topics/parameter_update.h"
 #include "../../ORB/topics/vehicle_attitude.h"
-#include "../../ORB/topics/vehicle_global_position.h"
+#include "../../ORB/topics/position/vehicle_global_position.h"
 #include "../../ORB/topics/actuator/actuator_controls.h"
+#include "../../ORB/topics/actuator/actuator_armed.h"
 
 
-pthread_t primary_thread_id;
-int primary_thread_return_value = 0;
+pthread_t comunicator_thread_id;
+int comunicator_thread_return_value = 0;
 
 /* Advertise airspeed, vehicle_global_position, vehicle_attitude topic */
 orb_advert_t airspeed_adv;
-orb_advert_t vehicle_global_position_adv;
+struct airspeed_s airspeed;
 orb_advert_t vehicle_attitude_adv;
-struct airspeed_s local_airspeed;
-struct vehicle_global_position_s local_vehicle_global_position;
-struct vehicle_attitude_s local_vehicle_attitude;
+struct vehicle_attitude_s vehicle_attitude;
+orb_advert_t vehicle_global_position_adv;
+struct vehicle_global_position_s vehicle_global_position;
+
+/* land detector */
+absolute_time landed_time;
+bool_t land_detector_initialized = 0;
+param_t param_land_time, param_land_alt, param_land_thrust;
+float land_t, land_alt, land_thrust;
+
 /* Subscribe to actuator_controls topic */
 orb_subscr_t actuator_controls_sub;
-struct actuator_controls_s local_actuator_controls;
+struct actuator_controls_s actuator_controls;
+orb_subscr_t armed_sub;
+struct actuator_armed_s armed;
+orb_subscr_t param_sub;
+struct parameter_update_s param;
 
 
 int parse_flight_data (double* flight_data, char* received_packet)
@@ -56,55 +71,125 @@ int create_output_packet (char* output_packet)
 {
 	//Construct a packet to send over UDP with flight flight_controls	  
 	return	sprintf (output_packet, "%lf\t%lf\t%lf\t%lf\n",
-					local_actuator_controls.aileron,
-					local_actuator_controls.elevator,
-					local_actuator_controls.rudder,
-					local_actuator_controls.throttle);
+					actuator_controls.aileron,
+					actuator_controls.elevator,
+					actuator_controls.rudder,
+					(armed.armed)? actuator_controls.throttle : 0);
 }
+
+// MAYBE IT NEED TO BE MOVED
+bool_t land_detector ()
+{
+	/* detect land */
+	bool_t _landed = 1; // initialize to safe value
+	bool_t updated = orb_check(ORB_ID(parameter_update), param_sub);
+	float thrust = (armed.armed)? actuator_controls.throttle : 0.0f;
+
+	/* update parameters */
+	if (!land_detector_initialized) {
+		if (!updated)
+			return _landed;
+
+		param_land_time = param_find ("LAND_TIME");
+		param_land_alt = param_find ("LAND_ALT");
+		param_land_thrust = param_find ("LAND_THRUST");
+
+		if (param_land_time == PARAM_INVALID ||
+			param_land_alt == PARAM_INVALID ||
+			param_land_thrust == PARAM_INVALID)
+		{
+			return _landed;
+		}
+
+		land_detector_initialized = 1;
+	}
+
+	if (updated)
+	{
+		orb_copy(ORB_ID(parameter_update), param_sub, &param);
+
+		param_get (param_land_time, &land_t);
+		param_get (param_land_alt, &land_alt);
+		param_get (param_land_thrust, &land_thrust);
+	}
+
+
+	/* get actual thrust output */
+
+
+	if (vehicle_global_position.landed) {
+		if ((vehicle_global_position.altitude - vehicle_global_position.ground_level) > land_alt && thrust > land_thrust) {
+			_landed = 0;
+			landed_time = 0;
+		}
+
+	} else {
+		_landed = 0;
+
+		if ((vehicle_global_position.altitude - vehicle_global_position.ground_level) < land_alt && thrust < land_thrust) {
+			if (landed_time == 0) {
+				landed_time = get_absolute_time();    // land detected first time
+
+			} else {
+				if (get_absolute_time() > landed_time + land_t * 1000000.0f) {
+					_landed = 1;
+					landed_time = 0;
+				}
+			}
+
+		} else {
+			landed_time = 0;
+		}
+	}
+
+	return _landed;
+}
+
 
 int publish_flight_data (double* flight_data)
 {
-	local_airspeed.indicated_airspeed_m_s = (float) flight_data[FDM_AIRSPEED];
-	local_airspeed.true_airspeed_m_s = (float) flight_data[FDM_AIRSPEED];
+	airspeed.indicated_airspeed_m_s = (float) flight_data[FDM_AIRSPEED];
+	airspeed.true_airspeed_m_s = (float) flight_data[FDM_AIRSPEED];
 
-	if (orb_publish (ORB_ID(airspeed), airspeed_adv, (const void *) &local_airspeed) < 0)
+	if (orb_publish (ORB_ID(airspeed), airspeed_adv, (const void *) &airspeed) < 0)
 	{
 		fprintf (stderr, "Failed to publish the airspeed topic\n");
 		return -1;
 	}
 	
-	local_vehicle_global_position.valid = 1;
-	local_vehicle_global_position.yaw = (float) flight_data[FDM_YAW_ANGLE];
-	local_vehicle_global_position.latitude = (double) flight_data[FDM_LATITUDE];
-	local_vehicle_global_position.longitude = (double) flight_data[FDM_LONGITUDE];
-	local_vehicle_global_position.altitude = (float) flight_data[FDM_ALTITUDE];
-	local_vehicle_global_position.ground_level = (float) flight_data[FDM_GROUND_LEVEL];
-	local_vehicle_global_position.vx = (float) flight_data[FDM_X_EARTH_VELOCITY];
-	local_vehicle_global_position.vy = (float) flight_data[FDM_Y_EARTH_VELOCITY];
-	local_vehicle_global_position.vz = (float) flight_data[FDM_Z_EARTH_VELOCITY];
+	vehicle_global_position.valid = 1;
+	vehicle_global_position.yaw = (float) flight_data[FDM_YAW_ANGLE];
+	vehicle_global_position.latitude = (double) flight_data[FDM_LATITUDE];
+	vehicle_global_position.longitude = (double) flight_data[FDM_LONGITUDE];
+	vehicle_global_position.altitude = (float) flight_data[FDM_ALTITUDE];
+	vehicle_global_position.ground_level = (float) flight_data[FDM_GROUND_LEVEL];
+	vehicle_global_position.vx = (float) flight_data[FDM_X_EARTH_VELOCITY];
+	vehicle_global_position.vy = (float) flight_data[FDM_Y_EARTH_VELOCITY];
+	vehicle_global_position.vz = (float) flight_data[FDM_Z_EARTH_VELOCITY];
+	vehicle_global_position.landed = land_detector ();
 
-	if (orb_publish (ORB_ID(vehicle_global_position), vehicle_global_position_adv, (const void *) &local_vehicle_global_position) < 0)
+	if (orb_publish (ORB_ID(vehicle_global_position), vehicle_global_position_adv, (const void *) &vehicle_global_position) < 0)
 	{
 		fprintf (stderr, "Failed to publish the airspeed topic\n");	
 		return -1;
 	}
 	
-	local_vehicle_attitude.roll =  (float) flight_data[FDM_ROLL_ANGLE];
-	local_vehicle_attitude.pitch =  (float) flight_data[FDM_PITCH_ANGLE];
-	local_vehicle_attitude.yaw =  (float) flight_data[FDM_YAW_ANGLE];
-	local_vehicle_attitude.roll_rate =  (float) flight_data[FDM_ROLL_RATE];
-	local_vehicle_attitude.pitch_rate =  (float) flight_data[FDM_PITCH_RATE];
-	local_vehicle_attitude.yaw_rate =  (float) flight_data[FDM_YAW_RATE];
-	local_vehicle_attitude.vx =  (float) flight_data[FDM_X_BODY_VELOCITY];
-	local_vehicle_attitude.vy =  (float) flight_data[FDM_Y_BODY_VELOCITY];
-	local_vehicle_attitude.vz =  (float) flight_data[FDM_Z_BODY_VELOCITY];
-	local_vehicle_attitude.ax =  (float) flight_data[FDM_X_BODY_ACCELERATION];
-	local_vehicle_attitude.ay =  (float) flight_data[FDM_Y_BODY_ACCELERATION];
-	local_vehicle_attitude.az =  (float) flight_data[FDM_Z_BODY_ACCELERATION];
-	local_vehicle_attitude.engine_rotation_speed =  (float) flight_data[FDM_ENGINE_ROTATION_SPEED];
-	local_vehicle_attitude.thrust =  (float) flight_data[FDM_ENGINE_THRUST];
+	vehicle_attitude.roll =  (float) flight_data[FDM_ROLL_ANGLE];
+	vehicle_attitude.pitch =  (float) flight_data[FDM_PITCH_ANGLE];
+	vehicle_attitude.yaw =  (float) flight_data[FDM_YAW_ANGLE];
+	vehicle_attitude.roll_rate =  (float) flight_data[FDM_ROLL_RATE];
+	vehicle_attitude.pitch_rate =  (float) flight_data[FDM_PITCH_RATE];
+	vehicle_attitude.yaw_rate =  (float) flight_data[FDM_YAW_RATE];
+	vehicle_attitude.vx =  (float) flight_data[FDM_X_BODY_VELOCITY];
+	vehicle_attitude.vy =  (float) flight_data[FDM_Y_BODY_VELOCITY];
+	vehicle_attitude.vz =  (float) flight_data[FDM_Z_BODY_VELOCITY];
+	vehicle_attitude.ax =  (float) flight_data[FDM_X_BODY_ACCELERATION];
+	vehicle_attitude.ay =  (float) flight_data[FDM_Y_BODY_ACCELERATION];
+	vehicle_attitude.az =  (float) flight_data[FDM_Z_BODY_ACCELERATION];
+	vehicle_attitude.engine_rotation_speed =  (float) flight_data[FDM_ENGINE_ROTATION_SPEED];
+	vehicle_attitude.thrust =  (float) flight_data[FDM_ENGINE_THRUST];
 	
-	if (orb_publish (ORB_ID(vehicle_attitude), vehicle_attitude_adv, (const void *) &local_vehicle_attitude) < 0)
+	if (orb_publish (ORB_ID(vehicle_attitude), vehicle_attitude_adv, (const void *) &vehicle_attitude) < 0)
 	{
 		fprintf (stderr, "Failed to publish the vehicle_attitude topic\n");	
 		return -1;
@@ -127,28 +212,42 @@ void* comunicator_loop (void* args)
 	airspeed_adv = orb_advertise (ORB_ID(airspeed));
 	if (airspeed_adv == -1)
 	{
-		fprintf (stderr, "Primary thread can't advertise the airspeed topic\n");
+		fprintf (stderr, "Comunicator thread can't advertise the airspeed topic\n");
 		exit (-1);
 	}
 
 	vehicle_global_position_adv = orb_advertise (ORB_ID(vehicle_global_position));
 	if (vehicle_global_position_adv == -1)
 	{
-		fprintf (stderr, "Primary thread can't advertise the vehicle_global_position topic\n");
+		fprintf (stderr, "Comunicator thread can't advertise the vehicle_global_position topic\n");
 		exit (-1);
 	}
 
 	vehicle_attitude_adv = orb_advertise (ORB_ID(vehicle_attitude));
 	if (vehicle_attitude_adv == -1)
 	{
-		fprintf (stderr, "Primary thread can't advertise the vehicle_attitude topic\n");
+		fprintf (stderr, "Comunicator thread can't advertise the vehicle_attitude topic\n");
 		exit (-1);
 	}
 
 	actuator_controls_sub = orb_subscribe (ORB_ID(actuator_controls));
 	if (actuator_controls_sub == -1)
 	{
-		fprintf (stderr, "Primary thread can't subscribe the vehicle_attitude topic\n");
+		fprintf (stderr, "Comunicator thread can't subscribe the vehicle_attitude topic\n");
+		exit (-1);
+	}
+
+	armed_sub = orb_subscribe (ORB_ID(actuator_armed));
+	if (armed_sub == -1)
+	{
+		fprintf (stderr, "Comunicator thread can't subscribe the actuator_armed topic\n");
+		exit (-1);
+	}
+
+	param_sub = orb_subscribe (ORB_ID(parameter_update));
+	if (param_sub == -1)
+	{
+		fprintf (stderr, "Comunicator thread can't subscribe the parameter_update topic\n");
 		exit (-1);
 	}
 
@@ -157,8 +256,8 @@ void* comunicator_loop (void* args)
 	if (!getenv("DO_NOT_SEND_CONTROLS") && client_address_initialization (&output_sockaddr, output_port, output_address) < 0)
 	{
 		fprintf (stderr, "Can't find the host on the given IP\n");
-		primary_thread_return_value = -1;
-		pthread_exit(&primary_thread_return_value);
+		comunicator_thread_return_value = -1;
+		pthread_exit(&comunicator_thread_return_value);
 	}
 	
 	fprintf (stdout, "\nTrying to establish a connection with FlightGear\n");
@@ -210,7 +309,7 @@ void* comunicator_loop (void* args)
 			if (!_shutdown_all_systems)
 			{
 				fprintf (stderr, "Can't receive the flight-data from FlightGear\n");
-				primary_thread_return_value = -1;
+				comunicator_thread_return_value = -1;
 			}
 			
 			break;
@@ -221,7 +320,7 @@ void* comunicator_loop (void* args)
 			//if (!_shutdown_all_systems)
 			{
 				fprintf (stderr, "Can't parse the flight-data\n");
-				primary_thread_return_value = -1;
+				comunicator_thread_return_value = -1;
 			}
 			
 			break;
@@ -233,7 +332,7 @@ void* comunicator_loop (void* args)
 			//if (!_shutdown_all_systems)
 			{
 				fprintf (stderr, "Can't publish flight-data\n");
-				primary_thread_return_value = -1;
+				comunicator_thread_return_value = -1;
 			}
 			
 			break;
@@ -242,20 +341,27 @@ void* comunicator_loop (void* args)
 
 		if (!getenv("DO_NOT_SEND_CONTROLS"))
 		{
+
+			if (orb_check(ORB_ID(actuator_armed), armed_sub))
+			{
+				orb_copy(ORB_ID(actuator_armed), armed_sub, &armed);
+			}
+
+
 			// wait for the result of the autopilot logic calculation
 			wait_return_value = orb_wait (ORB_ID(actuator_controls), actuator_controls_sub);
 			if (wait_return_value < 0)
 			{
 				if (!_shutdown_all_systems)
 				{
-					fprintf (stderr, "Primary thread experienced an error waiting for actuator_controls topic\n");
-					primary_thread_return_value = -1;
+					fprintf (stderr, "Comunicator thread experienced an error waiting for actuator_controls topic\n");
+					comunicator_thread_return_value = -1;
 				}
 				
 				break;
 			}
 			else if (wait_return_value)
-				orb_copy (ORB_ID(actuator_controls), actuator_controls_sub, (void *) &local_actuator_controls);
+				orb_copy (ORB_ID(actuator_controls), actuator_controls_sub, (void *) &actuator_controls);
 			
 			
 			// OUTPUTS
@@ -264,7 +370,7 @@ void* comunicator_loop (void* args)
 				//if (!_shutdown_all_systems)
 				{
 					fprintf (stderr, "Can't create the packet to be sent to FlightGear\n");
-					primary_thread_return_value = -1;
+					comunicator_thread_return_value = -1;
 				}
 				
 				break;
@@ -277,7 +383,7 @@ void* comunicator_loop (void* args)
 				if (!_shutdown_all_systems)
 				{
 					fprintf (stderr, "Can't send the packet to FlightGear\n");
-					primary_thread_return_value = -1;
+					comunicator_thread_return_value = -1;
 				}
 				
 				break;
@@ -299,7 +405,12 @@ void* comunicator_loop (void* args)
 	if (orb_unsubscribe (ORB_ID(actuator_controls), actuator_controls_sub, pthread_self()) < 0)
 		fprintf (stderr, "Failed to unsubscribe to actuator_controls topic\n");
 
+	if (orb_unsubscribe (ORB_ID(actuator_armed), armed_sub, pthread_self()) < 0)
+			fprintf (stderr, "Failed to unsubscribe to actuator_controls topic\n");
+
+	if (orb_unsubscribe (ORB_ID(parameter_update), param_sub, pthread_self()) < 0)
+			fprintf (stderr, "Failed to unsubscribe to actuator_controls topic\n");
 	
-	pthread_exit(&primary_thread_return_value);
+	pthread_exit(&comunicator_thread_return_value);
 	return 0;
 }

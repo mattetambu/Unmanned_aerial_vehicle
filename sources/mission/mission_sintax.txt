@@ -11,7 +11,7 @@ COMMAND TAG
 						<command id="ID" name*="COMMAND_NAME">
 							[property_list]
 						</command>
-	COMMAND_NAME		[WAYPOIT, LOITER, RTL, RTH, TAKEOFF, LAND]
+	COMMAND_NAME		[WAYPOIT, LOITER, RTL, TAKEOFF, LAND]
 
 CONTROL TAG
 	SINTAX
@@ -38,7 +38,7 @@ ACCEPTED_PROPERTY
 						//mode=[clockwise/anticlockwise]
 						//if both seconds and rounds are set then rounds is discarded
 						//if both seconds and rounds are not set then it means LOITER_UNLIM 
-		RTL/RTH			altitude	
+		RTL				altitude	
 		TAKEOFF/LAND	altitude
 	
 	CONTROL
@@ -63,7 +63,6 @@ PROPERTY to OPTION assignament for list storing
 						// value>0 means loiter_time
 						// value<0 means loiter_circle
 		RTL				altitude		-				-				-
-		RTH				altitude		-				-				-
 		TAKEOFF			altitude		-				-				-
 		LAND			altitude		-				-				-
 

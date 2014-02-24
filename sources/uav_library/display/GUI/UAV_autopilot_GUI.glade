@@ -3,14 +3,13 @@
   <!-- interface-requires gtk+ 2.16 -->
   <!-- interface-naming-policy project-wide -->
   <widget class="GtkDialog" id="UAV_autopilot_GUI_main_window">
-    <property name="width_request">700</property>
-    <property name="height_request">730</property>
+    <property name="width_request">730</property>
+    <property name="height_request">780</property>
     <property name="border_width">10</property>
     <property name="title" translatable="yes">UAV autopilot GUI</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">normal</property>
     <property name="has_separator">False</property>
-    <signal name="close" handler="close_GUI"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="Main_vbox">
         <property name="width_request">700</property>
@@ -831,6 +830,7 @@
                   </widget>
                   <packing>
                     <property name="expand">False</property>
+                    <property name="padding">5</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
@@ -851,7 +851,7 @@
                               <widget class="GtkLabel" id="Aileron_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Aileron</property>
+                                <property name="label" translatable="yes">Aileron  [-1,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -880,7 +880,7 @@
                               <widget class="GtkLabel" id="Elevator_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Elevator</property>
+                                <property name="label" translatable="yes">Elevator  [-1,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -910,7 +910,7 @@
                               <widget class="GtkLabel" id="Rudder_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Rudder</property>
+                                <property name="label" translatable="yes">Rudder  [-1,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -939,7 +939,7 @@
                               <widget class="GtkLabel" id="Throttle_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Throttle</property>
+                                <property name="label" translatable="yes">Throttle  [0,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -975,8 +975,153 @@
                   </widget>
                   <packing>
                     <property name="expand">False</property>
-                    <property name="padding">20</property>
+                    <property name="padding">15</property>
                     <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkExpander" id="Safety_status_expander">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="expanded">True</property>
+                    <child>
+                      <widget class="GtkVBox" id="Safety_status_vbox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkHBox" id="Safety_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Safety_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Safety [ON/OFF]</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Safety_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Armed_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Armed_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Armed [ON/OFF]</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Armed_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Ready_to_arm_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Ready_to_arm_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Ready to arm [ON/OFF]</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Ready_to_arm_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="Landed_hbox">
+                            <property name="visible">True</property>
+                            <property name="homogeneous">True</property>
+                            <child>
+                              <widget class="GtkLabel" id="Landed_label">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Landed [TRUE/FALSE]</property>
+                                <property name="ellipsize">middle</property>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="Landed_value">
+                                <property name="width_request">1</property>
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="Safety_status_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Safety status&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">5</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </widget>
@@ -1022,7 +1167,6 @@
                         <child>
                           <widget class="GtkButton" id="Reset_mission_button">
                             <property name="label" translatable="yes">Reset mission</property>
-                            <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <signal name="clicked" handler="reset_mission_botton_clicked"/>
@@ -1073,63 +1217,11 @@
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkHSeparator" id="hseparator1">
-                    <property name="visible">True</property>
-                  </widget>
+                  <widget class="GtkHSeparator" id="hseparator1"/>
                   <packing>
                     <property name="expand">False</property>
                     <property name="padding">10</property>
                     <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkHBox" id="Fly_to_waypoint_hbox">
-                    <property name="visible">True</property>
-                    <property name="homogeneous">True</property>
-                    <child>
-                      <widget class="GtkLabel" id="Fly_to_waypoint_label">
-                        <property name="width_request">1</property>
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Fly to waypoint</property>
-                        <property name="ellipsize">middle</property>
-                      </widget>
-                      <packing>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="Fly_to_waypoint_latitude_entry">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="tooltip" translatable="yes">Fly_to waypoint latitude
-(used in Fly_to flight mode)</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                        <signal name="changed" handler="fly_to_waypoint_latitude_changed"/>
-                      </widget>
-                      <packing>
-                        <property name="padding">2</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="Fly_to_waypoint_longitude_entry">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="tooltip" translatable="yes">Fly_to waypoint longitude
-(used in Fly_to flight mode)</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                        <signal name="changed" handler="fly_to_waypoint_longitude_changed"/>
-                      </widget>
-                      <packing>
-                        <property name="padding">2</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="padding">10</property>
-                    <property name="position">2</property>
                   </packing>
                 </child>
                 <child>
@@ -1151,11 +1243,9 @@
                       <widget class="GtkEntry" id="Home_waypoint_latitude_entry">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
-                        <property name="tooltip" translatable="yes">Home waypoint latitude
-(used in RTL flight mode)</property>
+                        <property name="tooltip" translatable="yes">Home waypoint latitude</property>
                         <property name="editable">False</property>
                         <property name="invisible_char">&#x25CF;</property>
-                        <signal name="changed" handler="home_waypoint_latitude_changed"/>
                       </widget>
                       <packing>
                         <property name="padding">2</property>
@@ -1166,11 +1256,57 @@
                       <widget class="GtkEntry" id="Home_waypoint_longitude_entry">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
-                        <property name="tooltip" translatable="yes">Home waypoint longitude
-(used in RTL flight mode)</property>
+                        <property name="tooltip" translatable="yes">Home waypoint longitude</property>
                         <property name="editable">False</property>
                         <property name="invisible_char">&#x25CF;</property>
-                        <signal name="changed" handler="home_waypoint_longitude_changed"/>
+                      </widget>
+                      <packing>
+                        <property name="padding">2</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">10</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHBox" id="Takeoff_waypoint_hbox">
+                    <property name="visible">True</property>
+                    <property name="homogeneous">True</property>
+                    <child>
+                      <widget class="GtkLabel" id="Takeoff_waypoint_label">
+                        <property name="width_request">1</property>
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Takeoff waypoint</property>
+                        <property name="ellipsize">middle</property>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="Takeoff_waypoint_latitude_entry">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="tooltip" translatable="yes">Takeoff waypoint latitude</property>
+                        <property name="editable">False</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                      </widget>
+                      <packing>
+                        <property name="padding">2</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="Takeoff_waypoint_longitude_entry">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="tooltip" translatable="yes">Takeoff waypoint longitude</property>
+                        <property name="editable">False</property>
+                        <property name="invisible_char">&#x25CF;</property>
                       </widget>
                       <packing>
                         <property name="padding">2</property>
@@ -1204,17 +1340,15 @@
                         <property name="active">0</property>
                         <property name="tearoff_title">Manual</property>
                         <property name="items" translatable="yes">Manual
-Assist
 Stabilize
 Fly_by_wire
+Easy
 Loiter
-Fly_to
 RTL (Return to launch WP)
-RTH (Return to home WP)
 Mission</property>
                       </widget>
                       <packing>
-                        <property name="padding">5</property>
+                        <property name="padding">2</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
@@ -1241,6 +1375,37 @@ Mission</property>
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
+              <widget class="GtkButton" id="Safety_button">
+                <property name="label" translatable="yes">Safety switch</property>
+                <property name="width_request">200</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="safety_button_clicked"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkButton" id="Arm_button">
+                <property name="label" translatable="yes">Want to arm</property>
+                <property name="width_request">200</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="pressed" handler="arm_control_button_clicked" object="1"/>
+                <signal name="released" handler="arm_control_button_clicked" object="0"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
               <widget class="GtkButton" id="Output_control_button">
                 <property name="label" translatable="yes">Start/Stop sending controls</property>
                 <property name="width_request">200</property>
@@ -1252,7 +1417,7 @@ Mission</property>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
-                <property name="position">0</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </widget>

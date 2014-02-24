@@ -20,14 +20,12 @@
 	#define MIN_LOITER_ALTITUDE		10		//meters
 	#define MIN_LOITER_RADIUS		10		//meters
 	#define MIN_RTL_ALTITUDE		10		//meters
-	#define MIN_RTH_ALTITUDE		10		//meters
 	#define MIN_TAKEOFF_ALTITUDE	10		//meters
 	#define MIN_LAND_ALTITUDE		10		//meters
 	
 	#define MAX_WAYPOINT_ALTITUDE	100		//meters
 	#define MAX_LOITER_ALTITUDE		100		//meters
 	#define MAX_RTL_ALTITUDE		100		//meters
-	#define MAX_RTH_ALTITUDE		100		//meters
 	#define MAX_TAKEOFF_ALTITUDE	100		//meters
 	#define MAX_LAND_ALTITUDE		100		//meters
 	

@@ -9,6 +9,7 @@
 #include <libxml/parser.h>
 
 #include "uav_library/common.h"
+#include "uav_library/param/param.h"
 #include "uav_library/io_ctrl/socket_io.h"
 #include "uav_library/io_ctrl/comunicator.h"
 #include "uav_library/io_ctrl/comunicator_loop.h"
@@ -232,6 +233,7 @@ int main (int n_args, char** args)
 	
 	system_time_init ();
 	system_orb_init ();
+	param_init ();
 
 	fprintf (stdout, "\n");
 	fflush (stdout);
@@ -254,7 +256,7 @@ int main (int n_args, char** args)
 #ifndef DO_NOT_COMUNICATE
 	// start primary comunicator loop
 	// it must be before start simulator for tcp connections
-	if (pthread_create (&primary_thread_id, NULL, comunicator_loop, NULL) != 0)
+	if (pthread_create (&comunicator_thread_id, NULL, comunicator_loop, NULL) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to comunicate with FlightGear (errno: %d)\n", errno);
 		exit(-1);
@@ -269,7 +271,7 @@ int main (int n_args, char** args)
 	}
 
 	if (getenv("START_SIMULATOR"))
-		sleep (20);
+		sleep (5);
 
 	// start GUI
 	if (getenv("START_GUI") &&  pthread_create (&GUI_thread_id, NULL, start_GUI, NULL) != 0)
@@ -332,7 +334,7 @@ int main (int n_args, char** args)
 		close (output_socket);
 	}
 
-	pthread_join (primary_thread_id, (void**)&(thread_return_values[2]));
+	pthread_join (comunicator_thread_id, (void**)&(thread_return_values[2]));
 #endif
 
 
