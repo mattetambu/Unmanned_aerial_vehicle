@@ -15,7 +15,8 @@
 #define TOPIC_ACTUATOR_OUTPUTS_H
 
 	#include <stdint.h>
-	#include "../ORB.h"
+	#include "../../ORB.h"
+	#include "../../../uav_library/common.h"
 
 	/**
 	 * @addtogroup topics
@@ -28,7 +29,7 @@
 		double rudder;
 		double throttle;
 		
-		bool valid_outputs;
+		bool_t valid_outputs;
 	};
 
 	/**

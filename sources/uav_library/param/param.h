@@ -78,7 +78,11 @@
 	 * Handle returned when a parameter cannot be found.
 	 */
 	#define PARAM_INVALID	((unsigned long)0xffffffff)
-
+	#define	PARAM_NAME_MAX_LENGTH		18
+	#define PARAM_DEFINE_INT(_name,_value)				if (param_define_int (#_name, _value) == PARAM_INVALID) return -1;
+	#define PARAM_DEFINE_FLOAT(_name,_value)			if (param_define_float (#_name, _value) == PARAM_INVALID) return -1;
+	#define PARAM_DEFINE_STRUCT(_name,_value,_size)		if (param_define_int (#_name, _value, _size) == PARAM_INVALID) return -1;
+	#define PARAM_GET(_name,_value)						if (param_get (_name, _value) == PARAM_INVALID) return -1;
 
 	/* function prototypes */
 	int param_init ();

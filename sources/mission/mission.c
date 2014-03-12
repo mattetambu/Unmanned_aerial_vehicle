@@ -8,6 +8,12 @@
 #include "../uav_library/common.h"
 
 
+pthread_t mission_publisher;
+struct mission_small_s local_mission_small;
+orb_advert_t mission_small_adv;
+orb_advert_t mission_adv;
+
+
 int command_name_decode (const xmlChar *name, accepted_command_t *cmd_name)
 {
 	accepted_command_t command_name;
@@ -311,6 +317,21 @@ int check_set_value (set_variable_t set_variable, double value)
 	return 0;
 }
 
+int mission_publish ()
+{
+	return orb_publish (ORB_ID(mission), mission_adv, (const void *) mission_list);
+}
+
+
+int mission_small_publish ()
+{
+	local_mission_small.lastly = mission_list->lastly;
+	local_mission_small.mode = mission_list->mode;
+	local_mission_small.command_index = mission_list->to_execute;
+	local_mission_small.current_command = mission_list->command_list[mission_list->to_execute];
+
+	return orb_publish (ORB_ID(mission_small), mission_small_adv, (const void *) &local_mission_small);
+}
 
 int mission_restart ()
 {
@@ -323,6 +344,12 @@ int mission_restart ()
 	
 	mission_list->to_execute = 0;
 	
+	if (mission_publish () < 0 || mission_small_publish () < 0)
+	{
+		fprintf (stderr, "Failed to publish the mission topic\n");
+		return -1;
+	}
+
 	fprintf (stdout, "Mission restarted\n");
 	fflush (stdout);
 	
@@ -335,9 +362,8 @@ int mission_init (char *mission_file_name)
 	xmlNode *root_node;
 	
 	// ******************************************* advertise mission topic *******************************************
-	struct mission_small_s local_mission_small;
-	orb_advert_t mission_small_adv = orb_advertise(ORB_ID(mission_small));
-	orb_advert_t mission_adv = orb_advertise(ORB_ID(mission));
+	mission_small_adv = orb_advertise(ORB_ID(mission_small));
+	mission_adv = orb_advertise(ORB_ID(mission));
 
 	memset (&local_mission_small, 0, sizeof (struct mission_small_s));
 	if (mission_adv == -1 || mission_small_adv == -1)
@@ -345,6 +371,7 @@ int mission_init (char *mission_file_name)
 		fprintf (stderr, "Failed to advertise the mission topic\n");
 		return -1;
 	}
+	mission_publisher = pthread_self();
 	
 	// ******************************************* analyze the mission file *******************************************
 	mission_list = malloc (sizeof(mission_t));
@@ -364,7 +391,7 @@ int mission_init (char *mission_file_name)
 		fprintf (stderr, "Error reading the specified mission file %s\n", mission_file_name);
 #endif
 	}
-	
+
 	if (mission_file == NULL)
 	{
 #ifdef ALWAYS_HAVE_A_MISSION
@@ -414,41 +441,27 @@ int mission_init (char *mission_file_name)
 		fflush (stdout);
 	}
 	
+
 	// ******************************************* publish *******************************************
-	local_mission_small.lastly = mission_list->lastly;
-	local_mission_small.mode = mission_list->mode;
-	local_mission_small.command_index = 0;
-	local_mission_small.current_command = mission_list->command_list[mission_list->to_execute];
-
-	if (orb_publish (ORB_ID(mission), mission_adv, (const void *) mission_list) < 0)
+	if (mission_publish () < 0 || mission_small_publish () < 0)
 	{
 		fprintf (stderr, "Failed to publish the mission topic\n");
 		return -1;
 	}
 
-	if (orb_publish (ORB_ID(mission_small), mission_small_adv, (const void *) &local_mission_small) < 0)
-	{
-		fprintf (stderr, "Failed to publish the mission topic\n");
-		return -1;
-	}
-	
-	
-	// **************************************** unadvertise ******************************************
-	if (orb_unadvertise (ORB_ID(mission), mission_adv, pthread_self()) < 0)
-		fprintf (stderr, "Failed to unadvertise the mission topic\n");
-
-	if (orb_unadvertise (ORB_ID(mission_small), mission_small_adv, pthread_self()) < 0)
-		fprintf (stderr, "Failed to unadvertise the mission_small topic\n");
-
-	// Clean up
-	//mission_destroy ();
-	
 
 	return 0;
 }
 
 void mission_destroy ()
 {
+	// **************************************** unadvertise ******************************************
+	if (orb_unadvertise (ORB_ID(mission), mission_adv, mission_publisher) < 0)
+		fprintf (stderr, "Failed to unadvertise the mission topic\n");
+
+	if (orb_unadvertise (ORB_ID(mission_small), mission_small_adv, mission_publisher) < 0)
+		fprintf (stderr, "Failed to unadvertise the mission_small topic\n");
+
 	if (!mission_list)
 		return;
 		

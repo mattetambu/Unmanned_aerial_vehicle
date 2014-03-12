@@ -32,7 +32,7 @@
 		double latitude;			/**< Latitude */
 		double longitude;			/**< Longitude */
 		float altitude;				/**< Altitude above MSL */
-		//float relative_altitude;	/**< Altitude above home position in meters */
+		float relative_altitude;	/**< Altitude above home position in meters */
 		float ground_level;			/**< Must be set to current ground level */
 		bool_t landed;				/**< true if vehicle is landed */
 

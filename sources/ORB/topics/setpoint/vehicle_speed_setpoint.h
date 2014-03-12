@@ -6,7 +6,7 @@
 #ifndef TOPIC_VEHICLE_SPEED_SETPOINT_H_
 #define TOPIC_VEHICLE_SPEED_SETPOINT_H_
 
-	#include "../ORB.h"
+	#include "../../ORB.h"
 
 	/**
 	 * @addtogroup topics

@@ -34,8 +34,6 @@ typedef union  {
 } param_value_u;
 
 
-#define	PARAM_NAME_MAX_LENGTH		15
-
 /**
  * Static parameter definition structure.
  *
@@ -137,7 +135,7 @@ int param_define (const char *name, param_type_t p_type, const void *val)
 
 	if (strlen(name) > PARAM_NAME_MAX_LENGTH)
 	{
-		fprintf (stderr, "Parameter name is not valid, must not exceed 15 characters\n");
+		fprintf (stderr, "Parameter name \'%s\' is not valid, must not exceed %d characters\n", name, PARAM_NAME_MAX_LENGTH);
 		return PARAM_INVALID;
 	}
 
@@ -300,7 +298,7 @@ param_t param_find(const char *name)
 
 	if (strlen(name) > PARAM_NAME_MAX_LENGTH)
 	{
-		fprintf (stderr, "Parameter name is not valid, must not exceed 15 characters\n");
+		fprintf (stderr, "Parameter name \'%s\' is not valid, must not exceed %d characters\n", name, PARAM_NAME_MAX_LENGTH);
 		return PARAM_INVALID;
 	}
 

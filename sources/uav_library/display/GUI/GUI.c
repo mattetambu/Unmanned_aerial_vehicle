@@ -11,13 +11,13 @@
 #include "../../../simulator/FlightGear_exchanged_data.h"
 
 #include "../../../ORB/ORB.h"
-#include "../../../ORB/topics/airspeed.h"
+#include "../../../ORB/topics/sensors/sensor_airspeed.h"
 #include "../../../ORB/topics/mission.h"
 #include "../../../ORB/topics/safety.h"
-#include "../../../ORB/topics/vehicle_attitude.h"
-#include "../../../ORB/topics/home_position.h"
-#include "../../../ORB/topics/takeoff_position.h"
-#include "../../../ORB/topics/manual_control_setpoint.h"
+#include "../../../ORB/topics/vehicle_hil_attitude.h"
+#include "../../../ORB/topics/setpoint/manual_control_setpoint.h"
+#include "../../../ORB/topics/position/home_position.h"
+#include "../../../ORB/topics/position/takeoff_position.h"
 #include "../../../ORB/topics/position/vehicle_global_position.h"
 #include "../../../ORB/topics/actuator/actuator_controls.h"
 #include "../../../ORB/topics/actuator/actuator_armed.h"
@@ -37,6 +37,8 @@ enum {
 	combobox_value_easy,
 	combobox_value_loiter,
 	combobox_value_rtl,
+	combobox_value_takeoff,
+	combobox_value_land,
 	combobox_value_mission
 };
 
@@ -179,6 +181,16 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 			manual_control_setpoint.second_switch = secondary_switch_rtl;
 			break;
 
+		case combobox_value_takeoff:
+			manual_control_setpoint.mode_switch = mode_switch_auto;
+			manual_control_setpoint.second_switch = secondary_switch_takeoff;
+			break;
+
+		case combobox_value_land:
+			manual_control_setpoint.mode_switch = mode_switch_auto;
+			manual_control_setpoint.second_switch = secondary_switch_land;
+			break;
+
 		case combobox_value_mission:
 			manual_control_setpoint.mode_switch = mode_switch_auto;
 			manual_control_setpoint.second_switch = secondary_switch_mission;
@@ -221,14 +233,14 @@ void stop_GUI (GtkWidget *button, gpointer user_data)
 	if (orb_unsubscribe (ORB_ID(mission_small), GUI_mission_small_sub, mission_textview_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to mission_small topic\n");
 
-	if (orb_unsubscribe (ORB_ID(airspeed), GUI_airspeed_sub, flight_data_updater_pid) < 0)
+	if (orb_unsubscribe (ORB_ID(sensor_airspeed), GUI_airspeed_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to airspeed topic\n");
 
 	if (orb_unsubscribe (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to vehicle_global_position topic\n");
 
-	if (orb_unsubscribe (ORB_ID(vehicle_attitude), GUI_vehicle_attitude_sub, flight_data_updater_pid) < 0)
-		fprintf (stderr, "Failed to unsubscribe to vehicle_attitude topic\n");
+	if (orb_unsubscribe (ORB_ID(vehicle_hil_attitude), GUI_vehicle_hil_attitude_sub, flight_data_updater_pid) < 0)
+		fprintf (stderr, "Failed to unsubscribe to vehicle_hil_attitude topic\n");
 
 	if (orb_unsubscribe (ORB_ID(actuator_controls), GUI_actuator_controls_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to actuator_controls topic\n");
@@ -251,7 +263,7 @@ void stop_GUI (GtkWidget *button, gpointer user_data)
 	GUI_mission_small_sub = -1;	/* Subscription to mission_small topic */
 	GUI_airspeed_sub = -1;	/* Subscription to airspeed topic */
 	GUI_vehicle_global_position_sub = -1;	/* Subscription to vehicle_global_position topic */
-	GUI_vehicle_attitude_sub = -1;	/* Subscription to vehicle_attitude topic */
+	GUI_vehicle_hil_attitude_sub = -1;	/* Subscription to vehicle_hil_attitude topic */
 	GUI_actuator_controls_sub = -1;	/* Subscription to actuator_controls topic */
 	GUI_actuator_armed_sub = -1;	/* Subscription to actuator_armed topic */
 	GUI_safety_sub = -1;	/* Subscription to safety topic */

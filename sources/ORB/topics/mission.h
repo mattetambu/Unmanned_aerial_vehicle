@@ -9,6 +9,8 @@
 	#include <stdint.h>
 	#include "../ORB.h"
 	
+	//#define ACCEPT_CONTROL_TAGS
+
 
 	/**
 	 * @addtogroup topics
@@ -19,9 +21,11 @@
 
 	typedef enum accepted_tag_t
 	{
-		accepted_tag_mission,
+		accepted_tag_mission = 0,
 		accepted_tag_command,
+#ifdef ACCEPT_CONTROL_TAGS
 		accepted_tag_control,
+#endif
 		accepted_tag_property
 	} accepted_tag_t;
 	
@@ -31,7 +35,9 @@
         {
 			return_custom_enum_string (accepted_tag_mission, "mission");
 			return_custom_enum_string (accepted_tag_command, "command");
+#ifdef ACCEPT_CONTROL_TAGS
 			return_custom_enum_string (accepted_tag_control, "control");
+#endif
 			return_custom_enum_string (accepted_tag_property, "property");
 			default: return NULL;
         }
@@ -39,8 +45,8 @@
 	
 	typedef enum mission_mode_t
 	{
-		mission_mode_resume,
-		mission_mode_restart,
+		mission_mode_resume = 0,
+		//mission_mode_restart,
 		mission_mode_N_MODES
 	} mission_mode_t;
 	
@@ -49,17 +55,17 @@
         switch(index)
         {
 			return_custom_enum_string (mission_mode_resume, "resume");
-			return_custom_enum_string (mission_mode_restart, "restart");
+			//return_custom_enum_string (mission_mode_restart, "restart");
 			default: return NULL;
         }
     }
 	
 	typedef enum mission_lastly_cmd_t
 	{
-		mission_lastly_cmd_do_nothing,
+		mission_lastly_cmd_do_nothing = 0,
 		mission_lastly_cmd_loiter,
-		mission_lastly_cmd_rtl_and_land,
-		mission_lastly_cmd_rtl_and_loiter,
+		mission_lastly_cmd_land,
+		mission_lastly_cmd_rtl,
 		mission_lastly_cmd_N_COMMANDS
 	} mission_lastly_cmd_t;
 	
@@ -69,15 +75,15 @@
         {
 			return_custom_enum_string (mission_lastly_cmd_do_nothing, "do_nothing");
 			return_custom_enum_string (mission_lastly_cmd_loiter, "loiter");
-			return_custom_enum_string (mission_lastly_cmd_rtl_and_land, "rtl_and_land");
-			return_custom_enum_string (mission_lastly_cmd_rtl_and_loiter, "rtl_and_loiter");
+			return_custom_enum_string (mission_lastly_cmd_land, "land");
+			return_custom_enum_string (mission_lastly_cmd_rtl, "rtl");
 			default: return NULL;
         }
     }
 		
 	typedef enum condition_sign_t
 	{
-		condition_sign_equal,
+		condition_sign_equal = 0,
 		condition_sign_not_equal,
 		condition_sign_grater,
 		condition_sign_grater_equal,
@@ -116,7 +122,7 @@
 	
 	typedef enum set_mode_t
 	{
-		set_mode_absolute,
+		set_mode_absolute = 0,
 		set_mode_relative,
 		set_mode_N_MODES
 	} set_mode_t;
@@ -133,7 +139,7 @@
 	
 	typedef enum loiter_mode_t
 	{
-		loiter_mode_clockwise,
+		loiter_mode_clockwise = 0,
 		loiter_mode_anticlockwise,
 		loiter_mode_N_MODES
 	} loiter_mode_t;
@@ -151,7 +157,7 @@
 	// maybe add some variables from autopilot_parameters.h::FDM & CONTROLS
 	typedef enum set_variable_t
 	{
-		set_variable_altitude,
+		set_variable_altitude = 0,
 		set_variable_speed,
 		set_variable_N_VARIABLES
 	} set_variable_t;
@@ -170,7 +176,7 @@
 	// maybe add some variables from FlightGear_exchanged_data.h
 	typedef enum test_variable_t
 	{
-		test_variable_altitude,
+		test_variable_altitude = 0,
 		test_variable_speed,
 		test_variable_heading_error,
 		test_variable_wp_distance,
@@ -195,11 +201,12 @@
 	typedef enum accepted_command_t
 	{
 		// commands
-		accepted_command_waypoint,
+		accepted_command_waypoint = 0,
 		accepted_command_loiter,
 		accepted_command_rtl,
 		accepted_command_takeoff,
 		accepted_command_land,
+#ifdef ACCEPT_CONTROL_TAGS
 		// controls
 		accepted_command_delay,
 		accepted_command_jump,
@@ -210,6 +217,7 @@
 		accepted_command_end_while,
 		accepted_command_if,
 		accepted_command_end_if,
+#endif
 		// utils
 		accepted_command_N_COMMANDS
 	} accepted_command_t;
@@ -224,6 +232,7 @@
 			return_custom_enum_string (accepted_command_rtl, "rtl");
 			return_custom_enum_string (accepted_command_takeoff, "takeoff");
 			return_custom_enum_string (accepted_command_land, "land");
+#ifdef ACCEPT_CONTROL_TAGS
 			// controls
 			return_custom_enum_string (accepted_command_delay, "delay");
 			return_custom_enum_string (accepted_command_jump, "jump");
@@ -234,6 +243,7 @@
 			return_custom_enum_string (accepted_command_end_while, "end_while");
 			return_custom_enum_string (accepted_command_if, "if");
 			return_custom_enum_string (accepted_command_end_if, "end_if");
+#endif
 			default: return NULL;
         }
     }

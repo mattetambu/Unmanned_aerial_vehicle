@@ -26,6 +26,7 @@
 		double elevator;
 		double rudder;
 		double throttle;
+		double flaps;
 	};
 
 	/**

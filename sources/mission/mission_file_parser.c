@@ -5,6 +5,17 @@
 #include "mission_file_parser.h"
 #include "../uav_library/common.h"
 
+typedef struct command_property_t
+{
+	xmlChar *name;
+	xmlChar *value;
+} command_property_t;
+
+
+mission_t *mission_list = NULL;
+
+
+#ifdef ACCEPT_CONTROL_TAGS
 typedef struct mission_initialize_support_t
 {
 	accepted_command_t name;
@@ -14,15 +25,8 @@ typedef struct mission_initialize_support_t
 	struct mission_initialize_support_t *next;
 } mission_initialize_support_t;
 
-typedef struct command_property_t
-{
-	xmlChar *name;
-	xmlChar *value;
-} command_property_t;
-
-
-mission_t *mission_list = NULL;
 mission_initialize_support_t *support_list = NULL;
+#endif
 
 
 int process_property_node (xmlNode *node, command_property_t *property)
@@ -237,6 +241,7 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 	return 0;
 }
 
+#ifdef ACCEPT_CONTROL_TAGS
 int process_control_node (xmlNode *node, int node_depth, mission_command_t *command)
 {
 	condition_sign_t condition;
@@ -400,7 +405,7 @@ int process_control_node (xmlNode *node, int node_depth, mission_command_t *comm
 
 	return 0;
 }
-
+#endif
 
 int insert_command_in_mission_list (mission_command_t *cmd)
 {
@@ -437,6 +442,8 @@ int insert_command_in_mission_list (mission_command_t *cmd)
 	return 0;
 }
 
+
+#ifdef ACCEPT_CONTROL_TAGS
 int insert_command_end_in_mission_list (uint8_t command_depth)
 {
 	mission_initialize_support_t *support_elem = NULL;
@@ -538,6 +545,7 @@ int update_support_list (mission_command_index_t command_index)
 	
 	return 0;
 }
+#endif
 
 int mission_file_parse (xmlNode *current_node, int node_depth)
 {
@@ -560,6 +568,7 @@ int mission_file_parse (xmlNode *current_node, int node_depth)
 				return -1;
 			}
 		}
+#ifdef ACCEPT_CONTROL_TAGS
 		else if (!strcmp((const char *) node->name, accepted_tag_to_string(accepted_tag_control)))
 		{
 			if (process_control_node (node, child_depth, &command) < 0)
@@ -568,6 +577,7 @@ int mission_file_parse (xmlNode *current_node, int node_depth)
 				return -1;
 			}
 		}
+#endif
 		else if (!strcmp((const char *) node->name, accepted_tag_to_string(accepted_tag_property)))
 			continue;	// DO NOTHING - This tag will be parsed by the parent node (and can't have child)
 		else
@@ -583,18 +593,22 @@ int mission_file_parse (xmlNode *current_node, int node_depth)
 		// Insert the command in the mission command list
 		if (insert_command_in_mission_list (&command) < 0)
 			return -1;
-		
+
+#ifdef ACCEPT_CONTROL_TAGS
 		// Update line counters of all previous node that still needs to be closed
 		if (update_support_list (mission_list->to_execute))
 			return -1;
+#endif
 		
 		// Recursion on the child
 		if (mission_file_parse (node, child_depth) < 0)
 			return -1;
-						
+
+#ifdef ACCEPT_CONTROL_TAGS
 		// Take track of node on the support list
 		if (insert_command_end_in_mission_list (command.depth) < 0)
 			return -1;
+#endif
 	}
 
 	return 0;
@@ -603,7 +617,9 @@ int mission_file_parse (xmlNode *current_node, int node_depth)
 
 int check_mission_integrity ()
 {
+#ifdef ACCEPT_CONTROL_TAGS
 	mission_initialize_support_t *support_elem = NULL;
+#endif
 	mission_command_t *command = NULL;
 	int mission_n_commands = 0, i;
 
@@ -611,18 +627,22 @@ int check_mission_integrity ()
 	{
 		command = &mission_list->command_list[i];
 		// check that only if, while and repeat have a non-property child
-		if (i+1 < mission_list->n_commands &&
-			command->depth < mission_list->command_list[i+1].depth &&
-			command->name != accepted_command_repeat &&
+		if (i+1 < mission_list->n_commands && command->depth < mission_list->command_list[i+1].depth
+#ifdef ACCEPT_CONTROL_TAGS
+			&& command->name != accepted_command_repeat &&
 			command->name != accepted_command_while &&
-			command->name != accepted_command_if)
+			command->name != accepted_command_if
+#endif
+			)
 		{
 			fprintf (stderr, "Invalid \'%s\' tag\n", accepted_command_to_string(command->name));
 			fprintf (stderr, "Non \'property\' children are allowed only in control tag of type \'if\',\'while\' and \'repeat\'\n");
 			return -1;
 		}
 
+#ifdef ACCEPT_CONTROL_TAGS
 		if (command->name < accepted_command_delay)
+#endif
 			mission_n_commands++;
 	}
 
@@ -634,6 +654,8 @@ int check_mission_integrity ()
 		return -1;
 	}
 
+
+#ifdef ACCEPT_CONTROL_TAGS
 	// check jump targets
 	while (support_list)
 	{
@@ -657,6 +679,7 @@ int check_mission_integrity ()
 		support_list = support_list->next;
 		free (support_elem);
 	}
+#endif
 
 	return 0;
 }

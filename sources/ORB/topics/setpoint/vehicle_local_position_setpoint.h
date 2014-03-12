@@ -42,7 +42,7 @@
 #ifndef TOPIC_VEHICLE_LOCAL_POSITION_SETPOINT_H_
 #define TOPIC_VEHICLE_LOCAL_POSITION_SETPOINT_H_
 
-#include "../uORB.h"
+#include "../../ORB.h"
 
 /**
  * @addtogroup topics

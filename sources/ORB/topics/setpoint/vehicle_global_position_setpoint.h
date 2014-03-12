@@ -7,13 +7,25 @@
 #define TOPIC_VEHICLE_GLOBAL_POSITION_SETPOINT_H_
 
 	#include <stdint.h>
-	#include "../ORB.h"
+	#include "../../ORB.h"
+	#include "../../../uav_library/common.h"
 	//#include "mission.h"
 
 	/**
 	 * @addtogroup topics
 	 * @{
 	 */
+
+	enum navigation_command_t
+	{
+		// commands
+		navigation_command_waypoint = 0,
+		navigation_command_loiter,
+		navigation_command_rtl,
+		navigation_command_takeoff,
+		navigation_command_land
+	};
+
 
 	/**
 	 * Global position setpoint in WGS84 coordinates.
@@ -26,10 +38,10 @@
 		double latitude;			/**< Latitude */
 		double longitude;			/**< Longitude */
 		float altitude;				/**< Altitude above MSL */
-		bool altitude_is_relative;	/**< true if altitude is relative from start point */
+		bool_t altitude_is_relative;	/**< true if altitude is relative from start point */
 		float yaw;					/**< in radians NED -PI..+PI */
 		
-		bool loitering_enabled;		/**< true if loitering is enabled */
+		enum navigation_command_t nav_cmd;		/**< navigation command */
 		float loiter_radius;		/**< loiter radius in meters, 0 for a VTOL to hover */
 		int8_t loiter_direction;	/**< 1: positive / clockwise, -1, negative */
 		

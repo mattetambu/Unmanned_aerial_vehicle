@@ -12,19 +12,24 @@
 #include "uav_library/param/param.h"
 #include "uav_library/io_ctrl/socket_io.h"
 #include "uav_library/io_ctrl/comunicator.h"
-#include "uav_library/io_ctrl/comunicator_loop.h"
 #include "uav_library/time/drv_time.h"
 #include "uav_library/display/printer_loop.h"
 #include "uav_library/display/GUI/GUI.h"
 #include "uav_library/console_controller/console_controller.h"
+
+#include "simulator/comunicator_loop.h"
 #include "simulator/FlightGear_launcher.h"
 #include "autopilot/autopilot.h"
 #include "mission/mission.h"
 #include "ORB/ORB.h"
 #include "test_thread.h"
 
+
+//#define START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
+
 char *mission_file_name = NULL;
 int _shutdown_all_systems = 0;
+
 
 void usage ()
 {
@@ -253,7 +258,6 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 
-#ifndef DO_NOT_COMUNICATE
 	// start primary comunicator loop
 	// it must be before start simulator for tcp connections
 	if (pthread_create (&comunicator_thread_id, NULL, comunicator_loop, NULL) != 0)
@@ -261,7 +265,6 @@ int main (int n_args, char** args)
 		fprintf (stderr, "Can't create a thread to comunicate with FlightGear (errno: %d)\n", errno);
 		exit(-1);
 	}
-#endif
 
 	// start simulator
 	if (getenv("START_SIMULATOR") && pthread_create (&simulator_thread_id, NULL, FlightGear_launcher, NULL) != 0)
@@ -280,6 +283,14 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 	
+#ifdef START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
+	if (getenv("START_SIMULATOR"))
+	{
+		while (!simulator_ready)
+			sleep (0.3);
+	}
+#endif
+
 	// start autopilot
 	if (pthread_create (&autopilot_thread_id, NULL, autopilot_loop, NULL) != 0)
 	{
@@ -294,7 +305,7 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 	
-	// start test thread - xxx to be removed
+	// start test thread
 	if (START_TEST_THREAD && pthread_create (&test_thread_id, NULL, test_thread_body, NULL) != 0)
 	{
 		fprintf (stderr, "Can't create the test thread (errno: %d)\n", errno);
@@ -321,7 +332,6 @@ int main (int n_args, char** args)
 	}
 
 
-#ifndef DO_NOT_COMUNICATE
 	if (input_socket >= 0)
 	{
 		shutdown (input_socket, SHUT_RDWR);
@@ -335,7 +345,7 @@ int main (int n_args, char** args)
 	}
 
 	pthread_join (comunicator_thread_id, (void**)&(thread_return_values[2]));
-#endif
+
 
 
 	// ************************************* print some data before exit ****************************************
@@ -347,9 +357,7 @@ int main (int n_args, char** args)
 		if (getenv("START_GUI") || getenv("GUI_STOPPED"))
 			fprintf (stdout, "GUI-launcher return value: %d\n", *(thread_return_values[1]));
 
-#ifndef DO_NOT_COMUNICATE
 		fprintf (stdout, "Comunicator thread return value: %d\n", *(thread_return_values[2]));
-#endif
 	}
 
 	fflush(stdout);

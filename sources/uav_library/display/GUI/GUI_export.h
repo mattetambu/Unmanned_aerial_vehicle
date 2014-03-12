@@ -60,7 +60,7 @@
 	extern orb_subscr_t	GUI_mission_small_sub;	/* Subscription to mission_small topic */
 	extern orb_subscr_t GUI_airspeed_sub;	/* Subscription to airspeed topic */
 	extern orb_subscr_t GUI_vehicle_global_position_sub;	/* Subscription to vehicle_global_position topic */
-	extern orb_subscr_t GUI_vehicle_attitude_sub;	/* Subscription to vehicle_attitude topic */
+	extern orb_subscr_t GUI_vehicle_hil_attitude_sub;	/* Subscription to vehicle_hil_attitude topic */
 	extern orb_subscr_t GUI_actuator_controls_sub;	/* Subscription to actuator_controls topic */
 	extern orb_subscr_t GUI_actuator_armed_sub;	/* Subscription to actuator_armed topic */
 	extern orb_subscr_t GUI_safety_sub;	/* Subscription to safety topic */

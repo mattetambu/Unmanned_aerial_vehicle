@@ -9,8 +9,8 @@
 #include "../console_controller/console_controller.h"
 
 #include "../../ORB/ORB.h"
-#include "../../ORB/topics/airspeed.h"
-#include "../../ORB/topics/vehicle_attitude.h"
+#include "../../ORB/topics/sensors/sensor_airspeed.h"
+#include "../../ORB/topics/vehicle_hil_attitude.h"
 #include "../../ORB/topics/position/vehicle_global_position.h"
 #include "../../ORB/topics/actuator/actuator_controls.h"
 
@@ -21,23 +21,23 @@ void* printer_loop (void* args)
 {
 	/* Subscribe to airspeed topic */
 	orb_subscr_t airspeed_sub;
-	struct airspeed_s local_airspeed;
+	struct sensor_airspeed_s airspeed;
 	/* Subscribe to vehicle_global_position topic */
 	orb_subscr_t vehicle_global_position_sub;
-	struct vehicle_global_position_s local_vehicle_global_position;
-	/* Subscribe to vehicle_attitude topic */
+	struct vehicle_global_position_s vehicle_global_position;
+	/* Subscribe to vehicle_hil_attitude topic */
 	orb_subscr_t vehicle_attitude_sub;
-	struct vehicle_attitude_s local_vehicle_attitude;
+	struct vehicle_hil_attitude_s vehicle_attitude;
 	/* Subscribe to actuator_controls topic */
 	orb_subscr_t actuator_controls_sub;
-	struct actuator_controls_s local_actuator_controls;
+	struct actuator_controls_s actuator_controls;
 	
-	int wait_return_value;
+	int poll_return_value;
 	absolute_time max_update_interval = 2000000;
 	
 
 	// ********************** Subscribe to the topics ******************************
-	airspeed_sub = orb_subscribe (ORB_ID(airspeed));
+	airspeed_sub = orb_subscribe (ORB_ID(sensor_airspeed));
 	if (airspeed_sub < 0)
 	{
 		fprintf (stderr, "Printer thread can't subscribe to airspeed topic\n");
@@ -51,23 +51,23 @@ void* printer_loop (void* args)
 		return 0;
 	}
 	
-	vehicle_attitude_sub = orb_subscribe (ORB_ID(vehicle_attitude));
+	vehicle_attitude_sub = orb_subscribe (ORB_ID(vehicle_hil_attitude));
 	if (vehicle_attitude_sub < 0)
 	{
-		fprintf (stderr, "Printer thread can't subscribe to vehicle_attitude topic\n");
+		fprintf (stderr, "Printer thread can't subscribe to vehicle_hil_attitude topic\n");
 		return 0;
 	}
 	
 	actuator_controls_sub = orb_subscribe (ORB_ID(actuator_controls));
 	if (actuator_controls_sub < 0)
 	{
-		fprintf (stderr, "Printer thread can't subscribe to vehicle_attitude topic\n");
+		fprintf (stderr, "Printer thread can't subscribe to actuator_controls topic\n");
 		return 0;
 	}
 
 	
 	// ********************** Set max update intervals ******************************
-	if (orb_set_interval (ORB_ID(airspeed), airspeed_sub, max_update_interval) < 0)
+	if (orb_set_interval (ORB_ID(sensor_airspeed), airspeed_sub, max_update_interval) < 0)
 	{
 		fprintf (stdout, "Failed to set max update interval for airspeed topic\n");
 		return 0;
@@ -79,15 +79,15 @@ void* printer_loop (void* args)
 		return 0;
 	}
 	
-	if (orb_set_interval (ORB_ID(vehicle_attitude), vehicle_attitude_sub, max_update_interval) < 0)
+	if (orb_set_interval (ORB_ID(vehicle_hil_attitude), vehicle_attitude_sub, max_update_interval) < 0)
 	{
-		fprintf (stdout, "Failed to set max update interval for vehicle_attitude topic\n");
+		fprintf (stdout, "Failed to set max update interval for vehicle_hil_attitude topic\n");
 		return 0;
 	}
 	
 	if (orb_set_interval (ORB_ID(actuator_controls), actuator_controls_sub, max_update_interval) < 0)
 	{
-		fprintf (stdout, "Failed to set max update interval for vehicle_attitude topic\n");
+		fprintf (stdout, "Failed to set max update interval for actuator_controls topic\n");
 		return 0;
 	}
 	
@@ -100,43 +100,43 @@ void* printer_loop (void* args)
 			continue;		
 		}
 		
-		wait_return_value = orb_wait (ORB_ID(airspeed), airspeed_sub);
-		if (wait_return_value < 0)
+		poll_return_value = orb_poll (ORB_ID(sensor_airspeed), airspeed_sub, 1000000);
+		if (poll_return_value < 0)
 		{
 			fprintf (stderr, "Printer thread experienced an error waiting for airspeed topic\n");
-			break;
+			continue;
 		}
-		else if (wait_return_value)
-			orb_copy (ORB_ID(airspeed), airspeed_sub, (void *) &local_airspeed);
+		else if (poll_return_value)
+			orb_copy (ORB_ID(sensor_airspeed), airspeed_sub, (void *) &airspeed);
 		
-		wait_return_value = orb_wait (ORB_ID(vehicle_global_position), vehicle_global_position_sub);
-		if (wait_return_value < 0)
+		poll_return_value = orb_poll (ORB_ID(vehicle_global_position), vehicle_global_position_sub, 1000000);
+		if (poll_return_value < 0)
 		{
 			fprintf (stderr, "Printer thread experienced an error waiting for vehicle_global_position topic\n");
-			break;
+			continue;
 		}
-		else if (wait_return_value)
-			orb_copy (ORB_ID(vehicle_global_position), vehicle_global_position_sub, (void *) &local_vehicle_global_position);
+		else if (poll_return_value)
+			orb_copy (ORB_ID(vehicle_global_position), vehicle_global_position_sub, (void *) &vehicle_global_position);
 		
-		wait_return_value = orb_wait (ORB_ID(vehicle_attitude), vehicle_attitude_sub);
-		if (wait_return_value < 0)
+		poll_return_value = orb_poll (ORB_ID(vehicle_hil_attitude), vehicle_attitude_sub, 1000000);
+		if (poll_return_value < 0)
 		{
-			fprintf (stderr, "Printer thread experienced an error waiting for vehicle_attitude topic\n");
-			break;
+			fprintf (stderr, "Printer thread experienced an error waiting for vehicle_hil_attitude topic\n");
+			continue;
 		}
-		else if (wait_return_value)
-			orb_copy (ORB_ID(vehicle_attitude), vehicle_attitude_sub, (void *) &local_vehicle_attitude);
+		else if (poll_return_value)
+			orb_copy (ORB_ID(vehicle_hil_attitude), vehicle_attitude_sub, (void *) &vehicle_attitude);
 		
 		if (!getenv("DO_NOT_SEND_CONTROLS"))
 		{
-			wait_return_value = orb_wait (ORB_ID(actuator_controls), actuator_controls_sub);
-			if (wait_return_value < 0)
+			poll_return_value = orb_poll (ORB_ID(actuator_controls), actuator_controls_sub, 1000000);
+			if (poll_return_value < 0)
 			{
 				fprintf (stderr, "Printer thread experienced an error waiting for actuator_controls topic\n");
-				break;
+				continue;
 			}
-			else if (wait_return_value)
-				orb_copy (ORB_ID(actuator_controls), actuator_controls_sub, (void *) &local_actuator_controls);
+			else if (poll_return_value)
+				orb_copy (ORB_ID(actuator_controls), actuator_controls_sub, (void *) &actuator_controls);
 			
 		}
 		
@@ -154,14 +154,14 @@ void* printer_loop (void* args)
 				X earth velocity: %.6f,\tY earth velocity: %.6f,\tZ earth velocity: %.6f,\tAirspeed: %.6f\n\
 				X body acceleration: %.6f,\tY body acceleration: %.6f,\tZ body acceleration: %.6f\n\
 				Engine rotation speed: %.6f,\tEngine thrust: %.6f\n",
-				local_vehicle_global_position.latitude, local_vehicle_global_position.longitude,
-				local_vehicle_global_position.altitude, local_vehicle_global_position.ground_level,
-				local_vehicle_attitude.roll, local_vehicle_attitude.pitch, local_vehicle_attitude.yaw,
-				local_vehicle_attitude.roll_rate, local_vehicle_attitude.pitch_rate, local_vehicle_attitude.yaw_rate,
-				local_vehicle_attitude.vx, local_vehicle_attitude.vy, local_vehicle_attitude.vz,
-				local_vehicle_global_position.vx, local_vehicle_global_position.vy, local_vehicle_global_position.vz, local_airspeed.indicated_airspeed_m_s,
-				local_vehicle_attitude.ax, local_vehicle_attitude.ay, local_vehicle_attitude.az,
-				local_vehicle_attitude.engine_rotation_speed, local_vehicle_attitude.thrust);
+				vehicle_global_position.latitude, vehicle_global_position.longitude,
+				vehicle_global_position.altitude, vehicle_global_position.ground_level,
+				vehicle_attitude.roll, vehicle_attitude.pitch, vehicle_attitude.yaw,
+				vehicle_attitude.roll_rate, vehicle_attitude.pitch_rate, vehicle_attitude.yaw_rate,
+				vehicle_attitude.vx, vehicle_attitude.vy, vehicle_attitude.vz,
+				vehicle_global_position.vx, vehicle_global_position.vy, vehicle_global_position.vz, airspeed.indicated_airspeed_m_s,
+				vehicle_attitude.ax, vehicle_attitude.ay, vehicle_attitude.az,
+				vehicle_attitude.engine_rotation_speed, vehicle_attitude.thrust);
 		fflush (stdout);
 		
 		// OUTPUTS
@@ -170,10 +170,10 @@ void* printer_loop (void* args)
 				Elevator:\t%.6f\n\
 				Rudder:\t\t%.6f\n\
 				Throttle:\t%.6f\n",
-				local_actuator_controls.aileron,
-				local_actuator_controls.elevator,
-				local_actuator_controls.rudder,
-				local_actuator_controls.throttle);
+				actuator_controls.aileron,
+				actuator_controls.elevator,
+				actuator_controls.rudder,
+				actuator_controls.throttle);
 		fflush (stdout);
 
 		// allow the user to control the console
@@ -182,14 +182,14 @@ void* printer_loop (void* args)
 	
 
 	// ************************************* unsubscribe ******************************************
-	if (orb_unsubscribe (ORB_ID(airspeed), airspeed_sub, pthread_self()) < 0)
+	if (orb_unsubscribe (ORB_ID(sensor_airspeed), airspeed_sub, pthread_self()) < 0)
 		fprintf (stderr, "Failed to unsubscribe to airspeed topic\n");
 
 	if (orb_unsubscribe (ORB_ID(vehicle_global_position), vehicle_global_position_sub, pthread_self()) < 0)
 		fprintf (stderr, "Failed to unsubscribe to vehicle_global_position topic\n");
 
-	if (orb_unsubscribe (ORB_ID(vehicle_attitude), vehicle_attitude_sub, pthread_self()) < 0)
-		fprintf (stderr, "Failed to unsubscribe to vehicle_attitude topic\n");
+	if (orb_unsubscribe (ORB_ID(vehicle_hil_attitude), vehicle_attitude_sub, pthread_self()) < 0)
+		fprintf (stderr, "Failed to unsubscribe to vehicle_hil_attitude topic\n");
 
 	if (orb_unsubscribe (ORB_ID(actuator_controls), actuator_controls_sub, pthread_self()) < 0)
 		fprintf (stderr, "Failed to unsubscribe to actuator_controls topic\n");

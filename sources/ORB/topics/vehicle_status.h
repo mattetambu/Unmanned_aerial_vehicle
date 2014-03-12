@@ -238,6 +238,12 @@
 		bool_t condition_system_sensors_initialized;
 		bool_t condition_system_in_air_restore;		/**< true if we can restore in mid air */
 
+		bool_t rc_signal_found_once;
+		bool_t rc_signal_lost;				/**< true if RC reception lost */
+
+		bool_t offboard_control_signal_found_once;
+		bool_t offboard_control_signal_lost;
+
 		/* see SYS_STATUS mavlink message for the following */
 		uint32_t onboard_control_sensors_present;
 		uint32_t onboard_control_sensors_enabled;

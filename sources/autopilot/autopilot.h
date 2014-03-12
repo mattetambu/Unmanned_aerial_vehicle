@@ -3,7 +3,6 @@
 #ifndef	_AUTOPILOT_H_
 #define	_AUTOPILOT_H_
 
-	#include "autopilot_parameters.h"
 	#include "../uav_library/common.h"
 	
 
