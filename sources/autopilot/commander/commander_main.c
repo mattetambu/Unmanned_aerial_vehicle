@@ -26,6 +26,8 @@
 #include "../../ORB/topics/position/home_position.h"
 #include "../../ORB/topics/position/takeoff_position.h"
 #include "../../ORB/topics/position/vehicle_global_position.h"
+#include "../../ORB/topics/position/vehicle_local_position.h"
+#include "../../ORB/topics/position/vehicle_gps_position.h"
 #include "../../ORB/topics/actuator/actuator_controls.h"
 #include "../../ORB/topics/actuator/actuator_armed.h"
 #include "../../ORB/topics/vehicle_command.h"
@@ -34,12 +36,14 @@
 
 #include "commander_main.h"
 #include "state_machine_helper.h"
+#include "../../uav_type.h"
 #include "../../uav_library/common.h"
 #include "../../uav_library/param/param.h"
 #include "../../uav_library/time/drv_time.h"
 
 
-#define ALWAYS_CONSIDER_MAN_SP_AS_VALID	// XXX TO REMOVE
+#define ALWAYS_CONSIDER_MAN_SP_AS_VALID	// XXX  to be removed when a valid RC is implemented
+//#define ALLOW_MULTIROTOR_DISARM
 #define LOW_VOLTAGE_BATTERY_HYSTERESIS_TIME_MS 1000.0f
 #define CRITICAL_VOLTAGE_BATTERY_HYSTERESIS_TIME_MS 100.0f
 
@@ -51,9 +55,10 @@
 #define CRITICAL_VOLTAGE_BATTERY_COUNTER_LIMIT (CRITICAL_VOLTAGE_BATTERY_HYSTERESIS_TIME_MS*COMMANDER_MONITORING_LOOPSPERMSEC)
 
 #define STICK_THRUST_RANGE 1.0f
-#define POSITION_TIMEOUT 1000000 /**< consider the local or global position estimate invalid after 1s */
+#define POSITION_TIMEOUT 1500000 /**< consider the local or global position estimate invalid after 1.5s */
 #define RC_TIMEOUT 200000 /**< consider the manaul control setpoint invalid after 0.2s */
 #define	WANT_TO_ARM_TIME_COUNTER_LIMIT	2000000
+#define	WANT_TO_DISARM_TIME_COUNTER_LIMIT	2000000
 #define BATTERY_INFO_EXPORT_TIME	20000000
 
 enum MAV_MODE_FLAG {
@@ -93,7 +98,7 @@ commander_params_define ()
 	PARAM_DEFINE_FLOAT (TAKEOFF_ALT, 7.5f); // XXX check this value (default 7.5f)
 	PARAM_DEFINE_FLOAT (LAND_ALT, 2.0f); // XXX check this value
 	PARAM_DEFINE_FLOAT (LAND_TIME, 3.0f);
-	PARAM_DEFINE_FLOAT (LAND_THRUST, 0.25f);
+	PARAM_DEFINE_FLOAT (LAND_THRUST, 0.3f);
 
 	return 0;
 }
@@ -102,7 +107,7 @@ void
 check_valid(absolute_time timestamp, absolute_time timeout, bool_t valid_in, bool_t *valid_out, bool_t *changed)
 {
 	absolute_time t = get_absolute_time();
-	bool_t valid_new = (t < timestamp + timeout && t > timeout && valid_in);
+	bool_t valid_new = (t < (timestamp + timeout) && t > timeout && valid_in);
 
 	if (*valid_out != valid_new) {
 		*valid_out = valid_new;
@@ -466,6 +471,9 @@ void* commander_thread_main (void* args)
 	unsigned critical_voltage_counter = 0;
 	absolute_time battery_info_time = 0;
 	absolute_time want_to_arm_time = 0;
+#ifdef ALLOW_MULTIROTOR_DISARM
+	absolute_time want_to_disarm_time = 0;
+#endif
 
 	uint64_t start_time = 0;
 	bool_t low_battery_voltage_actions_done = 0 /* false */;
@@ -479,6 +487,7 @@ void* commander_thread_main (void* args)
 	commander_initialized = 0 /* false */;
 	bool_t home_position_set = 0 /* false */;
 	bool_t takeoff_position_set = 0 /* false */;
+	bool_t gps_position_valid = 0 /* false */;
 
 
 	/* topics */
@@ -504,7 +513,7 @@ void* commander_thread_main (void* args)
 	status.finite_state_machine = finite_state_machine_preflight;
 	status.arming_state = arming_state_init;
 	status.hil_state = hil_state_off;
-	status.is_rotary_wing = 0 /* false */;	// only fixedwing
+	status.is_rotary_wing = is_rotary_wing;
 
 	/* neither manual nor offboard control commands have been received */
 	status.rc_signal_found_once = 0 /* false */;
@@ -596,6 +605,35 @@ void* commander_thread_main (void* args)
 		fprintf (stderr, "Commander thread failed to subscribe to vehicle_global_position topic\n");
 		exit(-1);
 	}
+
+	/* Subscribe to local position data */
+	int local_position_sub = orb_subscribe(ORB_ID(vehicle_local_position));
+	struct vehicle_local_position_s local_position;
+	memset(&local_position, 0, sizeof(local_position));
+	if (local_position_sub < 0)
+	{
+		fprintf (stderr, "Commander thread failed to subscribe to vehicle_local_position topic\n");
+		exit(-1);
+	}
+
+	/*
+	 * The home position is set based on GPS only, to prevent a dependency between
+	 * position estimator and commander. RAW GPS is more than good enough for a
+	 * non-flying vehicle.
+	 */
+
+	/* Subscribe to GPS topic */
+	int gps_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
+	struct vehicle_gps_position_s gps_position;
+	memset(&gps_position, 0, sizeof(gps_position));
+	if (gps_sub < 0)
+	{
+		fprintf (stderr, "Commander thread failed to subscribe to vehicle_gps_position topic\n");
+		exit(-1);
+	}
+	/* check if GPS fix is ok */
+	float hdop_threshold_m = 4.0f;
+	float vdop_threshold_m = 8.0f;
 
 	/* Subscribe to command topic */
 	int cmd_sub = orb_subscribe(ORB_ID(vehicle_command));
@@ -747,7 +785,7 @@ void* commander_thread_main (void* args)
 			// fprintf (stderr, "bat v: %2.2f", battery.voltage_v);
 
 			/* only consider battery voltage if system has been running 2s and battery voltage is higher than 4V */
-			if (get_absolute_time() > start_time + 2000000 && battery.voltage_v > 4.0f) {
+			if (t > start_time + 2000000 && battery.voltage_v > 4.0f) {
 				battery_remaining_estimation_return_value = battery_remaining_estimate_voltage(battery.voltage_v, &battery_remaining_estimation);
 
 				status.condition_battery_voltage_valid = (battery_remaining_estimation_return_value == 0)? 1 /* true */ : 0 /* false */;
@@ -756,6 +794,7 @@ void* commander_thread_main (void* args)
 
 				if (status.condition_battery_voltage_valid && t > battery_info_time + BATTERY_INFO_EXPORT_TIME) {
 					fprintf (stdout, "INFO: Battery remaining  %.1f%% \n", battery_remaining_estimation*100);
+					fflush (stdout);
 					battery_info_time = t;
 				}
 			}
@@ -815,9 +854,21 @@ void* commander_thread_main (void* args)
 		orb_stat(ORB_ID(vehicle_global_position), global_position_sub, &last_modification_timestamp);
 		check_valid(last_modification_timestamp, POSITION_TIMEOUT, global_position.valid, &(status.condition_global_position_valid), &status_changed);
 
-		if (status.condition_global_position_valid) {
-			if (status.condition_landed != global_position.landed) {
-				status.condition_landed = global_position.landed;
+
+		updated = orb_check(ORB_ID(vehicle_local_position), local_position_sub);
+		if (updated) {
+			/* position changed */
+			orb_copy(ORB_ID(vehicle_local_position), local_position_sub, &local_position);
+		}
+
+		/* update condition_local_position_valid and condition_local_altitude_valid */
+		orb_stat(ORB_ID(vehicle_local_position), local_position_sub, &last_modification_timestamp);
+		check_valid(last_modification_timestamp, POSITION_TIMEOUT, local_position.xy_valid, &(status.condition_local_position_valid), &status_changed);
+		check_valid(last_modification_timestamp, POSITION_TIMEOUT, local_position.z_valid, &(status.condition_local_altitude_valid), &status_changed);
+
+		if (status.condition_local_altitude_valid) {
+			if (status.condition_landed != local_position.landed) {
+				status.condition_landed = local_position.landed;
 				status_changed = 1 /* true */;
 
 				//if (status.condition_landed) {
@@ -828,58 +879,79 @@ void* commander_thread_main (void* args)
 			}
 		}
 
-		/*
-		 * Check for valid position information.
-		 *
-		 * If home position is not yet set AND the last
-		 * GPS measurement is not older than one seconds AND
-		 * the system is currently not armed, set home
-		 * position to the current position.
-		 */
-		if (updated && status.condition_global_position_valid && !home_position_set && global_position.landed && !armed.armed) {
-			/* copy position data to ORB home message, store it locally as well */
-			home_position.latitude = global_position.latitude;
-			home_position.longitude = global_position.longitude;
-			home_position.altitude = global_position.altitude;
-
-			home_position.time_gps_usec = global_position.time_gps_usec;
-
-			//fprintf (stderr, "home_position: lat = %.7f, lon = %.7f\n", home_position.latitude, home_position.longitude);
-			//mavlink_log_info(mavlink_fd, "[cmd] home: %.7f, %.7f", home_lat_d, home_lon_d);
-
-			/* announce new home position */
-			orb_publish(ORB_ID(home_position), home_position_adv, &home_position);
-
-			/* mark home position as set */
-			home_position_set = 1 /* true */;
-			//tune_positive();
-		}
 
 		/*
 		 * Check for valid position information.
 		 *
-		 * If home position is not yet set AND the last
-		 * GPS measurement is not older than one seconds AND
-		 * the system is currently not armed, set home
-		 * position to the current position.
+		 * If the system has a valid position source from an onboard
+		 * position estimator, it is safe to operate it autonomously.
+		 * The flag_vector_flight_mode_ok flag indicates that a minimum
+		 * set of position measurements is available.
 		 */
-		if (updated && status.condition_global_position_valid && !takeoff_position_set &&
-			!global_position.landed && (global_position.altitude - global_position.ground_level) > takeoff_alt && armed.armed) {
-			/* copy position data to ORB home message, store it locally as well */
-			takeoff_position.latitude = global_position.latitude;
-			takeoff_position.longitude = global_position.longitude;
-			takeoff_position.altitude = global_position.altitude;
 
-			takeoff_position.time_gps_usec = global_position.time_gps_usec;
+		updated = orb_check(ORB_ID(vehicle_gps_position), gps_sub);
+		gps_position_valid = (t < gps_position.timestamp_position + POSITION_TIMEOUT) &&
+							 (gps_position.eph_m < hdop_threshold_m) && (gps_position.epv_m < vdop_threshold_m);
+		if (updated) {
+			/* position changed */
+			orb_copy(ORB_ID(vehicle_gps_position), gps_sub, &gps_position);
 
-			//fprintf (stderr, "takeoff_position: lat = %.7f, lon = %.7f\n", takeoff_position.latitude, takeoff_position.longitude);
+			/*
+			 * If horizontal dilution of precision (hdop / eph)
+			 * and vertical diluation of precision (vdop / epv)
+			 * are below a certain threshold (e.g. 4 m), AND
+			 * home position is not yet set AND the last GPS
+			 * GPS measurement is not older than two seconds AND
+			 * the system is currently not armed, set home
+			 * position to the current position.
+			 */
 
-			/* announce new takeoff position */
-			orb_publish(ORB_ID(takeoff_position), takeoff_position_adv, &takeoff_position);
+			if (!home_position_set && gps_position.fix_type >= 3 && gps_position_valid && !armed.armed)
+			{
+				/* copy position data to uORB home message, store it locally as well */
+				home_position.latitude = gps_position.latitude;
+				home_position.longitude = gps_position.longitude;
+				home_position.altitude = gps_position.altitude;
 
-			/* mark takeoff position as set */
-			takeoff_position_set = 1 /* true */;
-			//tune_positive();
+				home_position.eph_m = gps_position.eph_m;
+				home_position.epv_m = gps_position.epv_m;
+
+				home_position.s_variance_m_s = gps_position.s_variance_m_s;
+				home_position.p_variance_m = gps_position.p_variance_m;
+
+				//fprintf (stderr, "home_position: lat = %.7f, lon = %.7f\n", home_position.latitude, home_position.longitude);
+
+				/* announce new home position */
+				orb_publish(ORB_ID(home_position), home_position_adv, &home_position);
+
+				/* mark home position as set */
+				home_position_set = 1 /* true */;
+				//tune_positive();
+			}
+
+			if (!takeoff_position_set && gps_position_valid &&  armed.armed &&
+				!local_position.landed && local_position.z < -takeoff_alt)
+			{
+				/* copy position data to ORB home message, store it locally as well */
+				takeoff_position.latitude = gps_position.latitude;
+				takeoff_position.longitude = gps_position.longitude;
+				takeoff_position.altitude = gps_position.altitude;
+
+				takeoff_position.eph_m = gps_position.eph_m;
+				takeoff_position.epv_m = gps_position.epv_m;
+
+				takeoff_position.s_variance_m_s = gps_position.s_variance_m_s;
+				takeoff_position.p_variance_m = gps_position.p_variance_m;
+
+				//fprintf (stderr, "takeoff_position: lat = %.7f, lon = %.7f\n", takeoff_position.latitude, takeoff_position.longitude);
+
+				/* announce new takeoff position */
+				orb_publish(ORB_ID(takeoff_position), takeoff_position_adv, &takeoff_position);
+
+				/* mark takeoff position as set */
+				takeoff_position_set = 1 /* true */;
+				//tune_positive();
+			}
 		}
 
 
@@ -897,13 +969,13 @@ void* commander_thread_main (void* args)
 
 #ifndef ALWAYS_CONSIDER_MAN_SP_AS_VALID
 			/* start RC input check */
-			if (get_absolute_time() < last_modification_timestamp + RC_TIMEOUT) {
+			if (t < last_modification_timestamp + RC_TIMEOUT) {
 #endif
 				/* handle the case where RC signal was regained */
 				if (!status.rc_signal_found_once) {
 					status.rc_signal_found_once = 1;
 					//mavlink_log_critical(mavlink_fd, "#audio: detected RC signal first time");
-					fprintf (stdout, "Detected RC signal for the first time\n");
+					fprintf (stdout, "INFO: Detected RC signal for the first time\n");
 					fflush (stdout);
 					status_changed = 1;
 
@@ -920,7 +992,29 @@ void* commander_thread_main (void* args)
 				/* arm/disarm by RC */
 				res = TRANSITION_NOT_CHANGED;
 
-				if (sp_man.want_to_arm && sp_man.throttle < STICK_THRUST_RANGE * 0.1f && status.arming_state == arming_state_standby) {
+				/* check if left stick is in lower left position and we are in MANUAL or AUTO_READY mode or (ASSISTED mode and landed) -> disarm
+				 * do it only for rotary wings
+				 */
+#ifdef ALLOW_MULTIROTOR_DISARM
+				if (status.is_rotary_wing &&
+					(status.arming_state == arming_state_armed || status.arming_state == arming_state_armed_error) &&
+					(status.main_flight_mode == main_state_manual || status.navigation_state == navigation_state_auto_ready ||
+					(status.condition_landed && (status.navigation_state == navigation_state_althold || status.navigation_state == navigation_state_vector))) &&
+					sp_man.want_to_disarm && sp_man.throttle < STICK_THRUST_RANGE * 0.1f) {
+					if (want_to_disarm_time == 0) {
+						want_to_disarm_time = t;
+					} else if (t > want_to_disarm_time + WANT_TO_DISARM_TIME_COUNTER_LIMIT) {
+						/* disarm to STANDBY if ARMED or to STANDBY_ERROR if ARMED_ERROR */
+						arming_state_t new_arming_state = (status.arming_state == arming_state_armed ? arming_state_standby : arming_state_standby_error);
+						res = arming_state_transition(&status, &safety, &control_flags, new_arming_state, &armed);
+						want_to_disarm_time = 0;
+					}
+				} else {
+					want_to_disarm_time = 0;
+				}
+#endif
+
+				if (status.arming_state == arming_state_standby && sp_man.want_to_arm && sp_man.thrust < STICK_THRUST_RANGE * 0.1f) {
 					if (want_to_arm_time == 0) {
 						want_to_arm_time = t;
 					} else if (t > want_to_arm_time + WANT_TO_ARM_TIME_COUNTER_LIMIT) {
@@ -989,7 +1083,7 @@ void* commander_thread_main (void* args)
 
 
 		/* evaluate the navigation state machine */
-		res = check_navigation_state_machine(&status, &control_flags, &global_position);
+		res = check_navigation_state_machine(&status, &control_flags, &local_position);
 		if (res == TRANSITION_DENIED) {
 			/* DENIED here indicates bug in the commander */
 			fprintf (stderr, "ERROR: nav denied: arm %d main %d nav %d\n", status.arming_state, status.main_flight_mode, status.navigation_state);
@@ -1026,6 +1120,8 @@ void* commander_thread_main (void* args)
 	/* unsubscribe topics */
 	orb_unsubscribe(ORB_ID(manual_control_setpoint), sp_man_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_global_position), global_position_sub, pthread_self());
+	orb_unsubscribe(ORB_ID(vehicle_local_position), local_position_sub, pthread_self());
+	orb_unsubscribe(ORB_ID(vehicle_gps_position), gps_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(safety), safety_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_command), cmd_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(parameter_update), param_changed_sub, pthread_self());

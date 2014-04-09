@@ -10,7 +10,6 @@
  * Each topic can be published by a single output driver
  */
  
- 
 #ifndef TOPIC_ACTUATOR_OUTPUTS_H
 #define TOPIC_ACTUATOR_OUTPUTS_H
 
@@ -18,24 +17,31 @@
 	#include "../../ORB.h"
 	#include "../../../uav_library/common.h"
 
+
+	#define NUM_ACTUATOR_OUTPUTS		16
+	#define NUM_ACTUATOR_OUTPUT_GROUPS	4	/**< for sanity checking */
+
+	/* output sets with pre-defined applications */
+	#define ORB_ID_VEHICLE_CONTROLS		ORB_ID(actuator_outputs_0)
+
 	/**
 	 * @addtogroup topics
 	 * @{
 	 */
 
-	struct actuator_outputs_s {
-		double aileron;
-		double elevator;
-		double rudder;
-		double throttle;
-		
-		bool_t valid_outputs;
-	};
+	typedef struct actuator_outputs_s {
+		float	output[NUM_ACTUATOR_OUTPUTS];		/**< output data, in natural output units */
+		unsigned noutputs;					/**< valid outputs */
+	} actuator_outputs_s;
 
 	/**
 	 * @}
 	 */
 	
-	ORB_DECLARE(actuator_outputs);
+	/* actuator output sets; this list can be expanded as more drivers emerge */
+	ORB_DECLARE_MANY(actuator_outputs_0, struct actuator_outputs_s);
+	ORB_DECLARE_MANY(actuator_outputs_1, struct actuator_outputs_s);
+	ORB_DECLARE_MANY(actuator_outputs_2, struct actuator_outputs_s);
+	ORB_DECLARE_MANY(actuator_outputs_3, struct actuator_outputs_s);
 
 #endif

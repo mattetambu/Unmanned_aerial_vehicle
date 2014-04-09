@@ -14,7 +14,7 @@
 #include <time.h>
 
 #include "../../ORB/ORB.h"
-#include "../../ORB/topics/sensors/sensor_airspeed.h"
+#include "../../ORB/topics/sensors/airspeed.h"
 #include "../../ORB/topics/sensors/sensor_accel.h"
 #include "../../ORB/topics/setpoint/vehicle_attitude_setpoint.h"
 #include "../../ORB/topics/setpoint/manual_control_setpoint.h"
@@ -53,7 +53,7 @@ static struct vehicle_attitude_s _att;					/**< vehicle attitude */
 static struct sensor_accel_s _accel;						/**< body frame accelerations */
 static struct vehicle_attitude_setpoint_s _att_sp;		/**< vehicle attitude setpoint */
 static struct manual_control_setpoint_s _manual;		/**< r/c channel data */
-static struct sensor_airspeed_s _airspeed;					/**< airspeed */
+static struct airspeed_s _airspeed;					/**< airspeed */
 static struct vehicle_control_flags_s _vcontrol_flags;	/**< vehicle control mode */
 
 static bool_t _setpoint_valid = 0;		/**< flag if the position control setpoint is valid */
@@ -87,10 +87,10 @@ static void vehicle_manual_poll()
 static bool_t vehicle_airspeed_poll()
 {
 	/* check if there is a new position */
-	bool_t airspeed_updated = orb_check(ORB_ID(sensor_airspeed), _airspeed_sub);
+	bool_t airspeed_updated = orb_check(ORB_ID(airspeed), _airspeed_sub);
 
 	if (airspeed_updated) {
-		orb_copy(ORB_ID(sensor_airspeed), _airspeed_sub, &_airspeed);
+		orb_copy(ORB_ID(airspeed), _airspeed_sub, &_airspeed);
 		return 1 /* true */;
 	}
 
@@ -122,7 +122,7 @@ static void vehicle_setpoint_poll()
 void* fw_attitude_control_thread_main (void* args)
 {
 	/* welcome user */
-	fprintf (stdout, "Attitude controller started\n");
+	fprintf (stdout, "Fixedwing attitude controller started\n");
 	fflush(stdout);
 
 
@@ -133,7 +133,7 @@ void* fw_attitude_control_thread_main (void* args)
 	float airspeed, airspeed_scaling;	/* scale around tuning airspeed */
 	const float actuator_scaling = 1.0f / (M_PI / 4.0f);	/* scale from radians to normalized -1 .. 1 range */
 
-	int updated;
+	int i, updated;
 	absolute_time usec_max_poll_wait_time = 200000;
 
 	/* declare and safely initialize all structs */
@@ -149,14 +149,14 @@ void* fw_attitude_control_thread_main (void* args)
 	/* output structs */
 	struct vehicle_attitude_setpoint_s att_sp;
 	struct vehicle_rates_setpoint_s rates_sp;
-	struct actuator_controls_s _actuators;
+	struct actuator_controls_s actuators;
 	memset(&att_sp, 0, sizeof(att_sp));
 	memset(&rates_sp, 0, sizeof(rates_sp));
-	memset(&_actuators, 0, sizeof(_actuators));
+	memset(&actuators, 0, sizeof(actuators));
 
 
 	/* abort on a nonzero return value from the parameter init */
-	if (fw_attitude_control_param_init() != 0) {
+	if (fw_attitude_control_params_init() != 0) {
 		/* parameter setup went wrong, abort */
 		fprintf (stderr, "Attitude controller aborting on startup due to an error\n");
 		exit(-1);
@@ -190,7 +190,7 @@ void* fw_attitude_control_thread_main (void* args)
 		exit(-1);
 	}
 
-	_airspeed_sub = orb_subscribe(ORB_ID(sensor_airspeed));
+	_airspeed_sub = orb_subscribe(ORB_ID(airspeed));
 	if (_airspeed_sub < 0)
 	{
 		fprintf (stderr, "Attitude controller thread failed to subscribe to airspeed topic\n");
@@ -226,18 +226,21 @@ void* fw_attitude_control_thread_main (void* args)
 		fprintf (stderr, "Attitude controller thread failed to advertise vehicle_rates_setpoint topic\n");
 		exit(-1);
 	}
+	orb_publish(ORB_ID(vehicle_rates_setpoint), _rate_sp_adv, &rates_sp);
 
 	_attitude_sp_adv = orb_advertise(ORB_ID(vehicle_attitude_setpoint));
 	if (_attitude_sp_adv < 0) {
 		fprintf (stderr, "Attitude controller thread failed to advertise vehicle_attitude_setpoint topic\n");
 		exit(-1);
 	}
+	orb_publish(ORB_ID(vehicle_attitude_setpoint), _attitude_sp_adv, &att_sp);
 
-	_actuators_adv = orb_advertise(ORB_ID(actuator_controls));
+	_actuators_adv = orb_advertise(ORB_ID_VEHICLE_ATTITUDE_CONTROLS);
 	if (_actuators_adv < 0) {
 		fprintf (stderr, "Attitude controller thread failed to advertise actuator_controls topic\n");
 		exit(-1);
 	}
+	orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, _actuators_adv, &actuators);
 
 	/* rate limit vehicle status updates to 5Hz */
 	orb_set_interval(ORB_ID(vehicle_control_flags), _vcontrol_flags_sub, 200000 /* usec */);
@@ -259,7 +262,7 @@ void* fw_attitude_control_thread_main (void* args)
 			orb_copy(ORB_ID(parameter_update), _params_sub, &p_update);
 
 			/* update parameters from storage */
-			fw_attitude_control_parameters_update();
+			fw_attitude_control_params_update();
 		}
 
 		/* wait for up to 200ms for data */
@@ -338,51 +341,47 @@ void* fw_attitude_control_thread_main (void* args)
 				 */
 				roll_sp = _manual.roll * 0.75f;
 				pitch_sp = _manual.pitch * 0.75f;
-				throttle_sp = _manual.throttle;
-				_actuators.flaps = _manual.flaps;
+				throttle_sp = _manual.thrust;
+				actuators.control[4] = _manual.flaps;
 
 				/*
 				 * in manual mode no external source should / does emit attitude setpoints.
 				 * emit the manual setpoint here to allow attitude controller tuning
 				 * in attitude control mode.
 				 */
+				att_sp.timestamp = get_absolute_time();
 				att_sp.roll_body = roll_sp;
 				att_sp.pitch_body = pitch_sp;
 				att_sp.yaw_body = 0.0f;
 				att_sp.thrust = throttle_sp;
 
 				/* lazily publish the setpoint only once available */
-				if (_attitude_sp_adv > 0) {
-					/* publish the attitude setpoint */
-					orb_publish(ORB_ID(vehicle_attitude_setpoint), _attitude_sp_adv, &att_sp);
-
-				} else {
-
-				}
+				orb_publish(ORB_ID(vehicle_attitude_setpoint), _attitude_sp_adv, &att_sp);
 			}
 
 			roll_rad = ECL_roll_controller_control (roll_sp, _att.roll, _att.roll_rate, airspeed_scaling, lock_integrator, _fw_attitude_control_parameters.airspeed_min, _fw_attitude_control_parameters.airspeed_max, airspeed);
-			_actuators.aileron = (check_finite(roll_rad))? roll_rad * actuator_scaling : 0.0f;
+			actuators.control[0] = (check_finite(roll_rad))? roll_rad * actuator_scaling : 0.0f;
 
 			pitch_rad = ECL_pitch_controller_control (pitch_sp, _att.pitch, _att.pitch_rate, _att.roll, airspeed_scaling, lock_integrator, _fw_attitude_control_parameters.airspeed_min, _fw_attitude_control_parameters.airspeed_max, airspeed);
-			_actuators.elevator = (check_finite(pitch_rad))? pitch_rad * actuator_scaling : 0.0f;
+			actuators.control[1] = (check_finite(pitch_rad))? pitch_rad * actuator_scaling : 0.0f;
 
 			yaw_rad = ECL_yaw_controller_control (_att.roll, _att.yaw_rate, _accel.y, airspeed_scaling, lock_integrator, _fw_attitude_control_parameters.airspeed_min, _fw_attitude_control_parameters.airspeed_max, airspeed);
-			_actuators.rudder = (check_finite(yaw_rad))? yaw_rad * actuator_scaling : 0.0f;
+			actuators.control[2] = (check_finite(yaw_rad))? yaw_rad * actuator_scaling : 0.0f;
 
 			/* throttle passed through */
-			_actuators.throttle = (check_finite(throttle_sp))? throttle_sp : 0.0f;
+			actuators.control[3] = (check_finite(throttle_sp))? throttle_sp : 0.0f;
 
 
 			// warnx("aspd: %s: %6.2f, aspd scaling: %6.2f, controls: %5.2f %5.2f %5.2f %5.2f", (_airspeed_valid) ? "valid" : "unknown",
-			// 			airspeed, airspeed_scaling, _actuators.aileron, _actuators.elevator,
-			// 			_actuators.rudder, _actuators.throttle);
+			// 			airspeed, airspeed_scaling, actuators.control[0], actuators.control[1],
+			// 			actuators.control[2], actuators.control[3]);
 
 
 			/*
 			 * Lazily publish the rate setpoint (for analysis, the actuators are published below)
 			 * only once available
 			 */
+			rates_sp.timestamp = get_absolute_time();
 			rates_sp.roll = ECL_roll_controller_get_desired_rate();
 			rates_sp.pitch = ECL_pitch_controller_get_desired_rate();
 			rates_sp.yaw = 0.0f; // XXX not yet implemented
@@ -392,17 +391,28 @@ void* fw_attitude_control_thread_main (void* args)
 
 		} else {
 			/* manual/direct control */
-			_actuators.aileron = _manual.roll;
-			_actuators.elevator = _manual.pitch;
-			_actuators.rudder = _manual.yaw;
-			_actuators.throttle = _manual.throttle;
-			_actuators.flaps = _manual.flaps;
+			actuators.control[0] = _manual.roll;
+			actuators.control[1] = _manual.pitch;
+			actuators.control[2] = _manual.yaw;
+			actuators.control[3] = _manual.thrust;
+			actuators.control[4] = _manual.flaps;
 		}
 
 		/* publish the attitude setpoint */
-		orb_publish(ORB_ID(actuator_controls), _actuators_adv, &_actuators);
+		orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, _actuators_adv, &actuators);
 
 	}
+
+
+	fprintf (stdout, "INFO: Attitude controller exiting, disarming motors\n");
+	fflush (stdout);
+
+	/* kill all outputs */
+	for (i = 0; i < NUM_ACTUATOR_CONTROLS; i++)
+		actuators.control[i] = 0.0f;
+
+	orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, _actuators_adv, &actuators);
+
 
 	/*
 	 * do unsubscriptions
@@ -410,7 +420,7 @@ void* fw_attitude_control_thread_main (void* args)
 	orb_unsubscribe(ORB_ID(vehicle_attitude_setpoint), _att_sp_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_attitude), _att_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(sensor_accel), _accel_sub, pthread_self());
-	orb_unsubscribe(ORB_ID(sensor_airspeed), _airspeed_sub, pthread_self());
+	orb_unsubscribe(ORB_ID(airspeed), _airspeed_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_control_flags), _vcontrol_flags_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(parameter_update), _params_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(manual_control_setpoint), _manual_sub, pthread_self());
@@ -420,7 +430,7 @@ void* fw_attitude_control_thread_main (void* args)
 	 */
 	orb_unadvertise(ORB_ID(vehicle_rates_setpoint), _rate_sp_adv, pthread_self());
 	orb_unadvertise(ORB_ID(vehicle_attitude_setpoint), _attitude_sp_adv, pthread_self());
-	orb_unadvertise(ORB_ID(actuator_controls), _actuators_adv, pthread_self());
+	orb_unadvertise(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, _actuators_adv, pthread_self());
 
 	return 0;
 }

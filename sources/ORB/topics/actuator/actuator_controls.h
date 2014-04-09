@@ -16,23 +16,30 @@
 	#include <stdint.h>
 	#include "../../ORB.h"
 
+
+	#define NUM_ACTUATOR_CONTROLS		8
+	#define NUM_ACTUATOR_CONTROL_GROUPS	4	/**< for sanity checking */
+
+	/* control sets with pre-defined applications */
+	#define ORB_ID_VEHICLE_ATTITUDE_CONTROLS	ORB_ID(actuator_controls_0)
+
 	/**
 	 * @addtogroup topics
 	 * @{
 	 */
 
-	struct actuator_controls_s {
-		double aileron;
-		double elevator;
-		double rudder;
-		double throttle;
-		double flaps;
-	};
+	typedef struct actuator_controls_s {
+		float	control[NUM_ACTUATOR_CONTROLS];
+	} actuator_controls_s;
 
 	/**
 	 * @}
 	 */
 
-	ORB_DECLARE(actuator_controls);
+	/* actuator control sets; this list can be expanded as more controllers emerge */
+	ORB_DECLARE_MANY(actuator_controls_0, struct actuator_controls_s);
+	ORB_DECLARE_MANY(actuator_controls_1, struct actuator_controls_s);
+	ORB_DECLARE_MANY(actuator_controls_2, struct actuator_controls_s);
+	ORB_DECLARE_MANY(actuator_controls_3, struct actuator_controls_s);
 
 #endif

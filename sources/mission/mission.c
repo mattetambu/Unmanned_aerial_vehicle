@@ -10,8 +10,8 @@
 
 pthread_t mission_publisher;
 struct mission_small_s local_mission_small;
-orb_advert_t mission_small_adv;
-orb_advert_t mission_adv;
+orb_advert_t mission_small_adv = -1;
+orb_advert_t mission_adv = -1;
 
 
 int command_name_decode (const xmlChar *name, accepted_command_t *cmd_name)
@@ -240,7 +240,9 @@ int check_command_altitude (accepted_command_t command_name, float altitude)
 #endif
 			break;
 
-		case accepted_command_loiter:
+		case accepted_command_loiter_time:
+		case accepted_command_loiter_circle:
+		case accepted_command_loiter_unlim:
 #ifdef MIN_LOITER_ALTITUDE
 			if (altitude < MIN_LOITER_ALTITUDE)
 			{
@@ -325,8 +327,8 @@ int mission_publish ()
 
 int mission_small_publish ()
 {
-	local_mission_small.lastly = mission_list->lastly;
-	local_mission_small.mode = mission_list->mode;
+	//local_mission_small.lastly = mission_list->lastly;
+	//local_mission_small.mode = mission_list->mode;
 	local_mission_small.command_index = mission_list->to_execute;
 	local_mission_small.current_command = mission_list->command_list[mission_list->to_execute];
 
@@ -382,31 +384,16 @@ int mission_init (char *mission_file_name)
 	}
 	memset (mission_list, 0, sizeof (mission_t));
 	
-	if (getenv("MISSION_SET") && (mission_file = xmlReadFile (mission_file_name, NULL, 0)) == NULL)
+	if (!getenv("MISSION_SET") || (mission_file = xmlReadFile (mission_file_name, NULL, 0)) == NULL)
 	{
-#ifdef ABORT_ON_MISSION_FILE_ERROR
-		fprintf (stderr, "Error reading the mission file %s\n", mission_file_name);
+		if (mission_file == NULL)
+			fprintf (stdout, "No mission set for this execution\n");
+		else
+			fprintf (stderr, "Error reading the mission file %s\n", mission_file_name);
+
 		return -1;
-#else
-		fprintf (stderr, "Error reading the specified mission file %s\n", mission_file_name);
-#endif
 	}
 
-	if (mission_file == NULL)
-	{
-#ifdef ALWAYS_HAVE_A_MISSION
-		fprintf (stderr, "The default mission will be used\n");
-		mission_file = xmlReadFile (DEFAULT_MISSION_FILE_NAME, NULL, 0);
-		if (mission_file == NULL)
-		{
-			fprintf (stderr, "Default mission file corrupted or not found\n");
-			return -1;
-		}
-#else
-		fprintf (stdout, "No mission set for this execution\n")
-#endif
-	}
-	
 	root_node = xmlDocGetRootElement (mission_file);
 	if (root_node == NULL || process_mission_node (root_node) < 0)
 	{
@@ -456,10 +443,10 @@ int mission_init (char *mission_file_name)
 void mission_destroy ()
 {
 	// **************************************** unadvertise ******************************************
-	if (orb_unadvertise (ORB_ID(mission), mission_adv, mission_publisher) < 0)
+	if (mission_adv != -1 && orb_unadvertise (ORB_ID(mission), mission_adv, mission_publisher) < 0)
 		fprintf (stderr, "Failed to unadvertise the mission topic\n");
 
-	if (orb_unadvertise (ORB_ID(mission_small), mission_small_adv, mission_publisher) < 0)
+	if (mission_small_adv != -1 && orb_unadvertise (ORB_ID(mission_small), mission_small_adv, mission_publisher) < 0)
 		fprintf (stderr, "Failed to unadvertise the mission_small topic\n");
 
 	if (!mission_list)

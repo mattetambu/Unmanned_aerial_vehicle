@@ -8,6 +8,7 @@
 
 	#include <stdint.h>
 	#include "../../ORB.h"
+	#include "../../../uav_library/time/drv_time.h"
 
 	/**
 	 * @addtogroup topics
@@ -15,6 +16,8 @@
 	 */
 	struct vehicle_rates_setpoint_s
 	{
+		absolute_time timestamp;
+
 		float roll;			/**< body angular rates in NED frame		*/
 		float pitch;		/**< body angular rates in NED frame		*/
 		float yaw;			/**< body angular rates in NED frame		*/

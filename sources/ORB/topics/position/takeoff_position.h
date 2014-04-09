@@ -22,9 +22,13 @@
 	{
 		uint64_t time_gps_usec;		/**< Timestamp (microseconds in GPS format), this is the timestamp from the gps module */
 		
-		double latitude;			/**< Latitude */
-		double longitude;			/**< Longitude */
-		float altitude;				/**< Altitude above MSL */
+		int32_t latitude;			/**< Latitude in 1E7 degrees */
+		int32_t longitude;			/**< Longitude in 1E7 degrees */
+		int32_t altitude;			/**< Altitude in 1E3 meters (millimeters) above MSL */
+		float eph_m;				/**< GPS HDOP horizontal dilution of position in m */
+		float epv_m;				/**< GPS VDOP horizontal dilution of position in m */
+		float s_variance_m_s;		/**< speed accuracy estimate m/s */
+		float p_variance_m;			/**< position accuracy estimate m */
 	};
 
 	/**

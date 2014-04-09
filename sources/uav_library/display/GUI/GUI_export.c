@@ -10,14 +10,14 @@
 #include "../../../simulator/FlightGear_exchanged_data.h"
 
 #include "../../../ORB/ORB.h"
-#include "../../../ORB/topics/sensors/sensor_airspeed.h"
+#include "../../../ORB/topics/sensors/airspeed.h"
 #include "../../../ORB/topics/mission.h"
 #include "../../../ORB/topics/safety.h"
 #include "../../../ORB/topics/vehicle_hil_attitude.h"
 #include "../../../ORB/topics/position/home_position.h"
 #include "../../../ORB/topics/position/takeoff_position.h"
 #include "../../../ORB/topics/position/vehicle_global_position.h"
-#include "../../../ORB/topics/actuator/actuator_controls.h"
+#include "../../../ORB/topics/actuator/actuator_effective_controls.h"
 #include "../../../ORB/topics/actuator/actuator_armed.h"
 
 
@@ -43,12 +43,13 @@ orb_subscr_t GUI_mission_small_sub = -1;	/* Subscription to mission_small topic 
 orb_subscr_t GUI_airspeed_sub = -1;	/* Subscription to airspeed topic */
 orb_subscr_t GUI_vehicle_global_position_sub = -1;	/* Subscription to vehicle_global_position topic */
 orb_subscr_t GUI_vehicle_hil_attitude_sub = -1;	/* Subscription to vehicle_hil_attitude topic */
-orb_subscr_t GUI_actuator_controls_sub = -1;	/* Subscription to actuator_controls topic */
+orb_subscr_t GUI_actuator_effective_controls_sub = -1;	/* Subscription to actuator_effective_controls topic */
 orb_subscr_t GUI_actuator_armed_sub = -1;	/* Subscription to actuator_armed topic */
 orb_subscr_t GUI_safety_sub = -1;	/* Subscription to safety topic */
 orb_subscr_t GUI_home_position_sub = -1;	/* Subscription to home_position topic */
 orb_subscr_t GUI_takeoff_position_sub = -1;	/* Subscription to takeoff_position topic */
 struct vehicle_global_position_s GUI_vehicle_global_position;
+struct actuator_armed_s GUI_actuator_armed;
 
 
 int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, int text_length)
@@ -66,9 +67,12 @@ int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, 
 			buffer_ptr[i++] = ' ';
 
 #ifdef ACCEPT_CONTROL_TAGS
-	if (command->name == accepted_command_end_repeat ||
-		command->name == accepted_command_end_while ||
-		command->name == accepted_command_end_if)
+	if (command->name == accepted_command_end_repeat
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
+		|| command->name == accepted_command_end_while
+		|| command->name == accepted_command_end_if
+#endif
+		)
 		{
 			return_value = snprintf (buffer_ptr+i, text_length-i, "  }\n");
 			return (return_value < 0)? -1 : i + return_value;
@@ -95,68 +99,65 @@ int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, 
 	switch (command->name)
 	{
 		case accepted_command_rtl:
-		case accepted_command_takeoff:
 		case accepted_command_land:
-			if (command->option1 > 0)
-			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
-				i += return_value;
-				if (return_value < 0)
-					return -1;
-			}
+			return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+
 			break;
+
+		case accepted_command_takeoff:
 		case accepted_command_waypoint:
-			if (command->option1 > 0)
-			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
-				i += return_value;
-				if (return_value < 0)
-					return -1;
-			}
-
-			return_value = snprintf (buffer_ptr+i, text_length-i, "latitude=%.8f  longitude=%.8f  ", command->option2, command->option3);
+			return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  latitude=%.8f  longitude=%.8f  ", command->option1, command->option2, command->option3);
 			i += return_value;
 			if (return_value < 0)
 				return -1;
+
+			return_value = snprintf (buffer_ptr+i, text_length-i, "radius=%.1f  ", command->option4);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+
 			break;
 
-		case accepted_command_loiter:
-			if (command->option1 > 0)
-			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  ", command->option1);
-				i += return_value;
-				if (return_value < 0)
-					return -1;
-			}
-			
-			return_value = snprintf (buffer_ptr+i, text_length-i, "mode=%s  ", loiter_mode_to_string((loiter_mode_t) command->option2));
+		case accepted_command_loiter_time:
+		case accepted_command_loiter_circle:
+		case accepted_command_loiter_unlim:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "altitude=%.3f  latitude=%.8f  longitude=%.8f  ", command->option1, command->option2, command->option3);
 			i += return_value;
 			if (return_value < 0)
 				return -1;
-			
-			if (command->option3 > 0)
-			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", command->option3);
-				i += return_value;
-				if (return_value < 0)
-					return -1;
-			}
-			else if (command->option3 < 0)
-			{
-				return_value = snprintf (buffer_ptr+i, text_length-i, "rounds=%.0f  ", -command->option3);
-				i += return_value;
-				if (return_value < 0)
-					return -1;
-			}
 
 			return_value = snprintf (buffer_ptr+i, text_length-i, "radius=%.1f  ", command->option4);
 			i += return_value;
 			if (return_value < 0)
 				return -1;
 			
+			return_value = snprintf (buffer_ptr+i, text_length-i, "mode=%s  ", (command->option5 < 0)? "anti-clockwise" : "clockwise");
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			
+			if (command->name == accepted_command_loiter_time)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", fabs(command->option5));
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			else if (command->name == accepted_command_loiter_circle)
+			{
+				return_value = snprintf (buffer_ptr+i, text_length-i, "rounds=%.0f  ", fabs(command->option5));
+				i += return_value;
+				if (return_value < 0)
+					return -1;
+			}
+			
 			break;
 
 #ifdef ACCEPT_CONTROL_TAGS
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 		case accepted_command_delay:
 			return_value = snprintf (buffer_ptr+i, text_length-i, "seconds=%.1f  ", command->option1);
 			i += return_value;
@@ -181,20 +182,21 @@ int buffer_print_mission_command (mission_command_t *command, char *buffer_ptr, 
 				return -1;
 			break;
 
-		case accepted_command_repeat:
-			return_value = snprintf (buffer_ptr+i, text_length-i, "(counter-%.0f-  <  %.0f)  {  ",
-									command->option1,
-									command->option3);
-			i += return_value;
-			if (return_value < 0)
-				return -1;
-			break;
-
 		case accepted_command_while:
 		case accepted_command_if:
 			return_value = snprintf (buffer_ptr+i, text_length-i, "(%s  %s  %.3f)  {  ",
 									test_variable_to_string ((test_variable_t) command->option1),
 									condition_sign_to_simbol ((condition_sign_t) command->option2),
+									command->option3);
+			i += return_value;
+			if (return_value < 0)
+				return -1;
+			break;
+#endif
+
+		case accepted_command_repeat:
+			return_value = snprintf (buffer_ptr+i, text_length-i, "(counter-%.0f-  <  %.0f)  {  ",
+									command->option1,
 									command->option3);
 			i += return_value;
 			if (return_value < 0)
@@ -229,7 +231,7 @@ void textview_buffer_fill_with_string (GtkTextBuffer *buffer, gchar *text_row, i
 
 int mission_textview_fill (GtkTextView * mission_textview, struct mission_s *mission) {
 	gchar text_row [MAX_TEXT_ROW_LENGTH];
-	int text_length;
+	int text_length = 0;
 	GtkTextBuffer *buffer;
 	mission_command_index_t index;
 
@@ -250,8 +252,8 @@ int mission_textview_fill (GtkTextView * mission_textview, struct mission_s *mis
 	buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (mission_textview));
 
 	text_length = snprintf ((char *) text_row, MAX_TEXT_ROW_LENGTH, "* mission  mode=%s  lastly=%s \n",
-						mission_mode_to_string(mission->mode),
-						mission_lastly_cmd_to_string(mission->lastly));
+							mission_mode_to_string(mission->mode),
+							mission_lastly_cmd_to_string(mission->lastly));
 	textview_buffer_fill_with_string (buffer, text_row, text_length);
 
 	for (index = 0; index < mission->n_commands; index++)
@@ -399,7 +401,7 @@ int init_flight_data_updater ()
 	if (GUI_airspeed_sub == -1)
 	{
 		// ********************** Subscribe to airspeed topic ******************************
-		GUI_airspeed_sub = orb_subscribe (ORB_ID(sensor_airspeed));
+		GUI_airspeed_sub = orb_subscribe (ORB_ID(airspeed));
 		if (GUI_airspeed_sub < 0)
 		{
 			fprintf (stderr, "Failed to subscribe to airspeed topic\n");
@@ -429,13 +431,13 @@ int init_flight_data_updater ()
 		}
 	}
 	
-	if (GUI_actuator_controls_sub == -1)
+	if (GUI_actuator_effective_controls_sub == -1)
 	{
-		// ********************** Subscribe to actuator_controls topic ******************************
-		GUI_actuator_controls_sub = orb_subscribe (ORB_ID(actuator_controls));
-		if (GUI_actuator_controls_sub < 0)
+		// ********************** Subscribe to actuator_effective_controls topic ******************************
+		GUI_actuator_effective_controls_sub = orb_subscribe (ORB_ID_VEHICLE_ATTITUDE_CONTROLS_EFFECTIVE);
+		if (GUI_actuator_effective_controls_sub < 0)
 		{
-			fprintf (stderr, "Failed to subscribe to actuator_controls topic\n");
+			fprintf (stderr, "Failed to subscribe to actuator_effective_controls topic\n");
 			return -1;
 		}
 	}
@@ -495,15 +497,14 @@ int GUI_flight_data_update ()
 	int i;
 	
 	// orb data (prv means poll_return_value)
-	int airspeed_prv, vehicle_global_position_prv, vehicle_attitude_prv, actuator_controls_prv;
+	int airspeed_prv, vehicle_global_position_prv, vehicle_attitude_prv, actuator_effective_controls_prv;
 	int safety_crv, actuator_armed_crv, home_position_crv, takeoff_position_crv;
 	absolute_time usec_max_poll_wait_time = 100000;
 	
 	// topics data
-	struct sensor_airspeed_s airspeed;
+	struct airspeed_s airspeed;
 	struct vehicle_hil_attitude_s vehicle_hil_attitude;
-	struct actuator_controls_s actuator_controls;
-	struct actuator_armed_s actuator_armed;
+	struct actuator_effective_controls_s actuator_effective_controls;
 	struct home_position_s home_position;
 	struct takeoff_position_s takeoff_position;
 	struct safety_s safety;
@@ -523,13 +524,13 @@ int GUI_flight_data_update ()
 		GUI_flight_data_updater_initialized = 1;
 	}
 	
-	airspeed_prv = orb_poll (ORB_ID(sensor_airspeed), GUI_airspeed_sub, usec_max_poll_wait_time);
+	airspeed_prv = orb_poll (ORB_ID(airspeed), GUI_airspeed_sub, usec_max_poll_wait_time);
 	if (airspeed_prv < 0 /* && !getenv ("GUI_STOPPED") */)
 	{
 		fprintf (stderr, "GUI thread experienced an error waiting for airspeed topic\n");
 	}
 	else if (airspeed_prv)
-		orb_copy (ORB_ID(sensor_airspeed), GUI_airspeed_sub, (void *) &airspeed);
+		orb_copy (ORB_ID(airspeed), GUI_airspeed_sub, (void *) &airspeed);
 	
 	vehicle_global_position_prv = orb_poll (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, usec_max_poll_wait_time);
 	if (vehicle_global_position_prv < 0 /* && !getenv ("GUI_STOPPED") */)
@@ -547,13 +548,13 @@ int GUI_flight_data_update ()
 	else if (vehicle_attitude_prv)
 		orb_copy (ORB_ID(vehicle_hil_attitude), GUI_vehicle_hil_attitude_sub, (void *) &vehicle_hil_attitude);
 
-	actuator_controls_prv = orb_poll (ORB_ID(actuator_controls), GUI_actuator_controls_sub, usec_max_poll_wait_time);
-	if (actuator_controls_prv < 0 /* && !getenv ("GUI_STOPPED") */)
+	actuator_effective_controls_prv = orb_poll (ORB_ID_VEHICLE_ATTITUDE_CONTROLS_EFFECTIVE, GUI_actuator_effective_controls_sub, usec_max_poll_wait_time);
+	if (actuator_effective_controls_prv < 0 /* && !getenv ("GUI_STOPPED") */)
 	{
-		fprintf (stderr, "GUI thread experienced an error waiting for actuator_controls topic\n");
+		fprintf (stderr, "GUI thread experienced an error waiting for actuator_effective_controls topic\n");
 	}
-	else if (actuator_controls_prv)
-		orb_copy (ORB_ID(actuator_controls), GUI_actuator_controls_sub, (void *) &actuator_controls);
+	else if (actuator_effective_controls_prv)
+		orb_copy (ORB_ID_VEHICLE_ATTITUDE_CONTROLS_EFFECTIVE, GUI_actuator_effective_controls_sub, (void *) &actuator_effective_controls);
 
 	safety_crv = orb_check (ORB_ID(safety), GUI_safety_sub);
 	if (safety_crv < 0 /* && !getenv ("GUI_STOPPED") */)
@@ -569,7 +570,7 @@ int GUI_flight_data_update ()
 		fprintf (stderr, "GUI thread experienced an error waiting for actuator_armed topic\n");
 	}
 	else if (actuator_armed_crv)
-		orb_copy (ORB_ID(actuator_armed), GUI_actuator_armed_sub, (void *) &actuator_armed);
+		orb_copy (ORB_ID(actuator_armed), GUI_actuator_armed_sub, (void *) &GUI_actuator_armed);
 
 	home_position_crv = orb_check (ORB_ID(home_position), GUI_home_position_sub);
 	if (home_position_crv < 0 /* && !getenv ("GUI_STOPPED") */)
@@ -628,8 +629,8 @@ int GUI_flight_data_update ()
 	}
 	if (vehicle_global_position_prv /* && !getenv ("GUI_STOPPED") */)
 	{
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LATITUDE]), g_strdup_printf ("%.10f", GUI_vehicle_global_position.latitude / 1.0e-7));
-		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LONGITUDE]), g_strdup_printf ("%.10f", GUI_vehicle_global_position.longitude / 1.0e-7));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LATITUDE]), g_strdup_printf ("%.10f", GUI_vehicle_global_position.latitude / 1.0e7));
+		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_LONGITUDE]), g_strdup_printf ("%.10f", GUI_vehicle_global_position.longitude / 1.0e7));
 		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_ALTITUDE]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.altitude));
 		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_GROUND_LEVEL]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.ground_level));
 		gtk_label_set_text (GTK_LABEL (properties_text_conteiners[FDM_X_EARTH_VELOCITY]), g_strdup_printf ("%.6f", GUI_vehicle_global_position.vx));
@@ -654,14 +655,14 @@ int GUI_flight_data_update ()
 			return 0;
 		}
 	
-	if (actuator_controls_prv)
+	if (actuator_effective_controls_prv)
 	{
 		if  (!getenv("DO_NOT_SEND_CONTROLS") /* && !getenv ("GUI_STOPPED") */)
 		{
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_AILERON]), g_strdup_printf ("%.6f", actuator_controls.aileron));
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_ELEVATOR]), g_strdup_printf ("%.6f", actuator_controls.elevator));
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_RUDDER]), g_strdup_printf ("%.6f", actuator_controls.rudder));
-			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_THROTTLE]), g_strdup_printf ("%.6f", (actuator_armed.armed)? actuator_controls.throttle : 0));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_AILERON]), g_strdup_printf ("%.6f", actuator_effective_controls.control[0]));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_ELEVATOR]), g_strdup_printf ("%.6f", actuator_effective_controls.control[1]));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_RUDDER]), g_strdup_printf ("%.6f", actuator_effective_controls.control[2]));
+			gtk_label_set_text (GTK_LABEL (controls_text_conteiners[CTRL_THROTTLE]), g_strdup_printf ("%.6f", actuator_effective_controls.control[3]));
 		}
 		else if (1 /* && !getenv ("GUI_STOPPED") */)
 		{
@@ -696,8 +697,8 @@ int GUI_flight_data_update ()
 
 	if (actuator_armed_crv)
 	{
-		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_ARMED]), g_strdup_printf ((actuator_armed.armed)? "ON" : "OFF"));
-		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_READY_TO_ARM]), g_strdup_printf ((actuator_armed.ready_to_arm)? "ON" : "OFF"));
+		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_ARMED]), g_strdup_printf ((GUI_actuator_armed.armed)? "ON" : "OFF"));
+		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_READY_TO_ARM]), g_strdup_printf ((GUI_actuator_armed.ready_to_arm)? "ON" : "OFF"));
 		gtk_label_set_text (GTK_LABEL (safety_status_text_conteiners[GUI_SAFETY_STATUS_LANDED]), g_strdup_printf ((GUI_vehicle_global_position.landed)? "TRUE" : "FALSE"));
 	}
 
@@ -720,14 +721,14 @@ int GUI_flight_data_update ()
 
 	if (home_position_crv)
 	{
-		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_HOME_WAYPOINT_LATITUDE_ENTRY]), g_strdup_printf ("%.8f", home_position.latitude));
-		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_HOME_WAYPOINT_LONGITUDE_ENTRY]), g_strdup_printf ("%.8f", home_position.longitude));
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_HOME_WAYPOINT_LATITUDE_ENTRY]), g_strdup_printf ("%.8f", ((float) home_position.latitude) / 1e7f));
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_HOME_WAYPOINT_LONGITUDE_ENTRY]), g_strdup_printf ("%.8f", ((float) home_position.longitude) / 1e7f));
 	}
 
 	if (takeoff_position_crv)
 	{
-		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_TAKEOFF_WAYPOINT_LATITUDE_ENTRY]), g_strdup_printf ("%.8f", takeoff_position.latitude));
-		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_TAKEOFF_WAYPOINT_LONGITUDE_ENTRY]), g_strdup_printf ("%.8f", takeoff_position.longitude));
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_TAKEOFF_WAYPOINT_LATITUDE_ENTRY]), g_strdup_printf ("%.8f", ((float) takeoff_position.latitude) / 1e7f));
+		gtk_entry_set_text (GTK_ENTRY (waypoint_entries[GUI_TAKEOFF_WAYPOINT_LONGITUDE_ENTRY]), g_strdup_printf ("%.8f", ((float) takeoff_position.longitude) / 1e7f));
 	}
 
 #ifdef GTK_MULTITHREAD

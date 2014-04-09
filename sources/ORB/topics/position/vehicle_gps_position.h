@@ -9,6 +9,7 @@
 	#include <stdint.h>
 	#include "../../ORB.h"
 	#include "../../../uav_library/common.h"
+	#include "../../../uav_library/time/drv_time.h"
 
 	/**
 	 * @addtogroup topics
@@ -20,12 +21,12 @@
 	 */
 	struct vehicle_gps_position_s
 	{
-		uint64_t timestamp_position;			/**< Timestamp for position information */
-		int32_t lat;					/**< Latitude in 1E-7 degrees */
-		int32_t lon;					/**< Longitude in 1E-7 degrees */
-		int32_t alt;					/**< Altitude in 1E-3 meters (millimeters) above MSL  */
+		absolute_time timestamp_position;			/**< Timestamp for position information */
+		int32_t latitude;					/**< Latitude in 1E7 degrees */
+		int32_t longitude;					/**< Longitude in 1E7 degrees */
+		int32_t altitude;					/**< Altitude in 1E3 meters (millimeters) above MSL  */
 
-		uint64_t timestamp_variance;
+		absolute_time timestamp_variance;
 		float s_variance_m_s;				/**< speed accuracy estimate m/s */
 		float p_variance_m;				/**< position accuracy estimate m */
 		float c_variance_rad;				/**< course accuracy estimate rad */
@@ -34,7 +35,7 @@
 		float eph_m;					/**< GPS HDOP horizontal dilution of position in m */
 		float epv_m;					/**< GPS VDOP horizontal dilution of position in m */
 
-		uint64_t timestamp_velocity;			/**< Timestamp for velocity informations */
+		absolute_time timestamp_velocity;			/**< Timestamp for velocity informations */
 		float vel_m_s;					/**< GPS ground speed (m/s) */
 		float vel_n_m_s;				/**< GPS ground speed in m/s */
 		float vel_e_m_s;				/**< GPS ground speed in m/s */
@@ -42,10 +43,10 @@
 		float cog_rad;					/**< Course over ground (NOT heading, but direction of movement) in rad, -PI..PI */
 		bool_t vel_ned_valid;				/**< Flag to indicate if NED speed is valid */
 
-		uint64_t timestamp_time;			/**< Timestamp for time information */
-		uint64_t time_gps_usec;				/**< Timestamp (microseconds in GPS format), this is the timestamp which comes from the gps module   */
+		absolute_time timestamp_time;			/**< Timestamp for time information */
+		absolute_time time_gps_usec;				/**< Timestamp (microseconds in GPS format), this is the timestamp which comes from the gps module   */
 
-		uint64_t timestamp_satellites;			/**< Timestamp for sattelite information */
+		absolute_time timestamp_satellites;			/**< Timestamp for sattelite information */
 		uint8_t satellites_visible;			/**< Number of satellites visible. If unknown, set to 255 */
 		uint8_t satellite_prn[20]; 			/**< Global satellite ID */
 		uint8_t satellite_used[20];			/**< 0: Satellite not used, 1: used for localization */

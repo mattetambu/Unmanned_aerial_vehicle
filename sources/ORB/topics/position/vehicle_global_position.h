@@ -9,6 +9,7 @@
 	#include <stdint.h>
 	#include "../../ORB.h"
 	#include "../../../uav_library/common.h"
+	#include "../../../uav_library/time/drv_time.h"
 
 	/**
 	 * @addtogroup topics
@@ -25,13 +26,13 @@
 	 */
 	struct vehicle_global_position_s
 	{
-		uint64_t time_gps_usec;		/**< Timestamp (microseconds in GPS format), this is the timestamp from the gps module */
-		int valid;					/**< true if position satisfies validity criteria of estimator */
+		absolute_time time_gps_usec;		/**< Timestamp (microseconds in GPS format), this is the timestamp from the gps module */
+		bool_t valid;		/**< true if position satisfies validity criteria of estimator */
 		float yaw;					/**< Compass heading in radians -PI..+PI. */
 		
-		double latitude;			/**< Latitude */
-		double longitude;			/**< Longitude */
-		float altitude;				/**< Altitude above MSL */
+		float latitude;			/**< Latitude in 1E7 degrees */
+		float longitude;			/**< Longitude in 1E7 degrees */
+		float altitude;				/**< Altitude above MSL in meters */
 		float relative_altitude;	/**< Altitude above home position in meters */
 		float ground_level;			/**< Must be set to current ground level */
 		bool_t landed;				/**< true if vehicle is landed */

@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-
-<mission>
-	<command name="takeoff" altitude="60"/>
-	<command name="loiter" seconds="30"/>
-	<command name="rtl"/>
-</mission>

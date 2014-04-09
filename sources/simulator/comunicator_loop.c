@@ -15,6 +15,7 @@
 #include "../uav_library/io_ctrl/comunicator.h"
 #include "../uav_library/io_ctrl/socket_io.h"
 
+#include "../uav_type.h"
 #include "FlightGear_exchanged_data.h"
 
 #include "../ORB/ORB.h"
@@ -22,15 +23,15 @@
 #include "../ORB/topics/vehicle_hil_attitude.h"
 #include "../ORB/topics/sensors/battery_status.h"
 #include "../ORB/topics/sensors/sensor_accel.h"
-#include "../ORB/topics/sensors/sensor_airspeed.h"
+#include "../ORB/topics/sensors/airspeed.h"
 #include "../ORB/topics/sensors/sensor_baro.h"
 #include "../ORB/topics/sensors/sensor_combined.h"
 #include "../ORB/topics/sensors/sensor_gyro.h"
 #include "../ORB/topics/sensors/sensor_mag.h"
+#include "../ORB/topics/sensors/sensor_optical_flow.h"
 #include "../ORB/topics/position/vehicle_gps_position.h"
-#include "../ORB/topics/position/vehicle_global_position.h"
-#include "../ORB/topics/actuator/actuator_controls.h"
-#include "../ORB/topics/actuator/actuator_armed.h"
+#include "../ORB/topics/position/vehicle_hil_global_position.h"
+#include "../ORB/topics/actuator/actuator_outputs.h"
 
 
 pthread_t comunicator_thread_id;
@@ -42,41 +43,31 @@ int comunicator_thread_return_value = 0;
 #endif
 
 /* Advertise topics */
-orb_advert_t pub_hil_global_pos = -1;
-orb_advert_t pub_hil_attitude = -1;
-orb_advert_t pub_hil_gps = -1;
-orb_advert_t pub_hil_sensors = -1;
-orb_advert_t pub_hil_gyro = -1;
-orb_advert_t pub_hil_accel = -1;
-orb_advert_t pub_hil_mag = -1;
-orb_advert_t pub_hil_baro = -1;
-orb_advert_t pub_hil_airspeed = -1;
-orb_advert_t pub_hil_battery = -1;
-struct vehicle_global_position_s hil_global_pos;
-struct vehicle_hil_attitude_s hil_attitude;
-struct vehicle_gps_position_s hil_gps;
-struct sensor_combined_s hil_sensors;
-struct battery_status_s	hil_battery_status;
-struct sensor_airspeed_s airspeed;
-struct sensor_gyro_s gyro;
-struct sensor_accel_s accel;
-struct sensor_mag_s mag;
-struct sensor_baro_s baro;
+static orb_advert_t pub_hil_attitude = -1;
+static orb_advert_t pub_hil_gps = -1;
+static orb_advert_t pub_hil_global_pos = -1;
+static orb_advert_t pub_hil_sensors = -1;
+static orb_advert_t pub_hil_gyro = -1;
+static orb_advert_t pub_hil_accel = -1;
+static orb_advert_t pub_hil_flow = -1;
+static orb_advert_t pub_hil_mag = -1;
+static orb_advert_t pub_hil_baro = -1;
+static orb_advert_t pub_hil_airspeed = -1;
+static orb_advert_t pub_hil_battery = -1;
+static struct vehicle_hil_attitude_s hil_attitude;
+static struct vehicle_gps_position_s hil_gps;
+static struct vehicle_hil_global_position_s hil_global_pos;
+static struct sensor_combined_s hil_sensors;
+static struct battery_status_s	hil_battery_status;
+static struct airspeed_s airspeed;
+static struct sensor_gyro_s gyro;
+static struct sensor_accel_s accel;
+static struct sensor_mag_s mag;
+static struct sensor_optical_flow_s flow;
+static struct sensor_baro_s baro;
 
 /* Subscribe to topics */
-orb_subscr_t actuator_controls_sub;
-orb_subscr_t armed_sub;
-orb_subscr_t param_sub;
-struct actuator_controls_s actuator_controls;
-struct actuator_armed_s armed;
-struct parameter_update_s param;
-
-
-/* land detector */
-absolute_time landed_time;
-bool_t land_detector_initialized = 0;
-param_t param_land_time, param_land_alt, param_land_thrust;
-float land_t = 3.0f, land_alt = 2.0f, land_thrust = 0.25f;
+static struct actuator_outputs_s actuator_outputs;
 
 /* packet counter */
 static int hil_counter = 0;
@@ -86,10 +77,10 @@ static absolute_time old_timestamp = 0;
 
 /* constants */
 static const float g = 9.80665;
-static const float m2cm = 100.0;
+//static const float m2cm = 100.0;
 static const float m2mm = 1000.0;
 //static const float m2feets = 3.2808399;
-static const float sec2usec = 1.0e6;
+//static const float sec2usec = 1.0e6;
 static const float rad2degE7 = 1.0e7*180.0/M_PI;
 //static const float rad2mrad = 1.0e3;
 //static const float ga2mga = 1.0e3;
@@ -111,8 +102,7 @@ int parse_flight_data (double* flight_data, char* received_packet)
 	//Parse UDP data and store into double array
 	return	sscanf (received_packet, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 					&flight_data[FDM_FLIGHT_TIME], &flight_data[FDM_TEMPERATURE], &flight_data[FDM_PRESSURE],
-					&flight_data[FDM_LATITUDE], &flight_data[FDM_LONGITUDE],
-					&flight_data[FDM_ALTITUDE], &flight_data[FDM_GROUND_LEVEL],
+					&flight_data[FDM_LATITUDE], &flight_data[FDM_LONGITUDE], &flight_data[FDM_ALTITUDE], &flight_data[FDM_GROUND_LEVEL],
 					&flight_data[FDM_ROLL_ANGLE], &flight_data[FDM_PITCH_ANGLE], &flight_data[FDM_YAW_ANGLE],
 					&flight_data[FDM_ROLL_RATE], &flight_data[FDM_PITCH_RATE], &flight_data[FDM_YAW_RATE],
 					&flight_data[FDM_X_BODY_VELOCITY], &flight_data[FDM_Y_BODY_VELOCITY], &flight_data[FDM_Z_BODY_VELOCITY],
@@ -124,80 +114,12 @@ int parse_flight_data (double* flight_data, char* received_packet)
 
 int create_output_packet (char* output_packet)
 {
-	//Construct a packet to send over UDP with flight flight_controls	  
+	//Construct a packet to send over UDP with flight flight_outputs
 	return	sprintf (output_packet, "%lf\t%lf\t%lf\t%lf\n",
-					actuator_controls.aileron,
-					actuator_controls.elevator,
-					actuator_controls.rudder,
-					(armed.armed)? actuator_controls.throttle : 0);
-}
-
-
-bool_t land_detector ()
-{
-	/* detect land */
-	bool_t _landed = 1; // initialize to safe value
-	bool_t updated = orb_check(ORB_ID(parameter_update), param_sub);
-	float thrust = (armed.armed)? actuator_controls.throttle : 0.0f;
-
-	/* update parameters */
-	if (!land_detector_initialized) {
-		if (!updated)
-			return _landed;
-
-		param_land_time = param_find ("LAND_TIME");
-		param_land_alt = param_find ("LAND_ALT");
-		param_land_thrust = param_find ("LAND_THRUST");
-
-		if (param_land_time == PARAM_INVALID ||
-			param_land_alt == PARAM_INVALID ||
-			param_land_thrust == PARAM_INVALID)
-		{
-			return _landed;
-		}
-
-		land_detector_initialized = 1;
-	}
-
-	if (updated)
-	{
-		orb_copy(ORB_ID(parameter_update), param_sub, &param);
-
-		param_get (param_land_time, &land_t);
-		param_get (param_land_alt, &land_alt);
-		param_get (param_land_thrust, &land_thrust);
-	}
-
-
-	/* get actual thrust output */
-
-
-	if (hil_global_pos.landed) {
-		if ((hil_global_pos.altitude - hil_global_pos.ground_level) > land_alt && thrust > land_thrust) {
-			_landed = 0;
-			landed_time = 0;
-		}
-
-	} else {
-		_landed = 0;
-
-		if ((hil_global_pos.altitude - hil_global_pos.ground_level) < land_alt && thrust < land_thrust) {
-			if (landed_time == 0) {
-				landed_time = get_absolute_time();    // land detected first time
-
-			} else {
-				if (get_absolute_time() > landed_time + land_t * 1000000.0f) {
-					_landed = 1;
-					landed_time = 0;
-				}
-			}
-
-		} else {
-			landed_time = 0;
-		}
-	}
-
-	return _landed;
+					actuator_outputs.output[0],
+					actuator_outputs.output[1],
+					actuator_outputs.output[2],
+					actuator_outputs.output[3]);
 }
 
 
@@ -208,14 +130,20 @@ int publish_flight_data (double* flight_data)
 	float pos_noise = 0, alt_noise = 0, vel_noise = 0; // maybe to be set as params
 	float acc_noise = 0, gyro_noise = 0, mag_noise = 0, baro_noise = 0; // maybe to be set as params
 
-	float time_usec = flight_data[FDM_FLIGHT_TIME]*sec2usec;
+	//float flight_time = flight_data[FDM_FLIGHT_TIME]*sec2usec;
+	absolute_time time_usec = get_absolute_time();
 	float tempC = flight_data[FDM_TEMPERATURE], tempK = tempC + T0;
 	//float press = flight_data[FDM_PRESSURE];
-	float lat = flight_data[FDM_LATITUDE]*rad2degE7 + pos_noise/r_earth;
-	float lon = flight_data[FDM_LONGITUDE]*rad2degE7 + pos_noise*cos(lat)/r_earth;
-	float alt = flight_data[FDM_ALTITUDE]*m2mm + alt_noise;
-	float gl = flight_data[FDM_GROUND_LEVEL];
+	float lat = flight_data[FDM_LATITUDE] + pos_noise/r_earth;
+	float lon = flight_data[FDM_LONGITUDE] + pos_noise*cos(lat)/r_earth;
+	float alt = flight_data[FDM_ALTITUDE] + alt_noise;
+	float ground_level = flight_data[FDM_GROUND_LEVEL] + alt_noise;
 
+	// precaution needed because on startup flightgear sends many wrong data
+	if (alt < 0)
+	{
+		return 0;
+	}
 
 	float phi = flight_data[FDM_ROLL_ANGLE], cosPhi = cos(phi), sinPhi = sin(phi);
 	float theta = flight_data[FDM_PITCH_ANGLE], cosThe = cos(theta), sinThe = sin(theta);
@@ -228,20 +156,21 @@ int publish_flight_data (double* flight_data)
 	float q = cosPhi*thetadot + sinPhi*cosThe*psidot;
 	float r = -sinPhi*thetadot + cosPhi*cosThe*psidot;
 
-	float vx = flight_data[FDM_X_BODY_VELOCITY]*m2cm;
-	float vy = flight_data[FDM_Y_BODY_VELOCITY]*m2cm;
-	float vz = flight_data[FDM_Z_BODY_VELOCITY]*m2cm;
-	float ve = flight_data[FDM_X_EARTH_VELOCITY]*m2cm;
-	float vn = flight_data[FDM_Y_EARTH_VELOCITY]*m2cm;
-	float vd = flight_data[FDM_Z_EARTH_VELOCITY]*m2cm;
+	float vx = flight_data[FDM_X_BODY_VELOCITY];
+	float vy = flight_data[FDM_Y_BODY_VELOCITY];
+	float vz = flight_data[FDM_Z_BODY_VELOCITY];
+	float ve = flight_data[FDM_X_EARTH_VELOCITY];
+	float vn = flight_data[FDM_Y_EARTH_VELOCITY];
+	float vd = flight_data[FDM_Z_EARTH_VELOCITY];
 	//float  v = (sqrt(ve*ve + vn*vn + vd*vd))*m2cm;
 	float tas = flight_data[FDM_AIRSPEED];
 
 	float fix_type = 3;
 	float satellites_visible = 10;
-	float eph = 1.0*m2cm;
-	float epv = 5.0*m2cm;
-	float vel = (sqrt(vn*vn + ve*ve) + vel_noise)*m2cm; // sog - speed on ground
+	float eph = 1.0;
+	float epv = 5.0;
+	float vel = sqrt(vn*vn + ve*ve) + vel_noise; // sog - speed on ground
+	float heading_rad;
 	float cog = atan2(ve, vn);
 	cog = (cog < 0)? cog+2*M_PI : cog;
 	cog = cog*rad2deg;
@@ -299,7 +228,6 @@ int publish_flight_data (double* flight_data)
 	hil_sensors.timestamp = timestamp;
 
 	/* hil gyro */
-
 	hil_sensors.gyro_counter = hil_counter;
 	hil_sensors.gyro_raw[0] = xgyro / mrad2rad;
 	hil_sensors.gyro_raw[1] = ygyro / mrad2rad;
@@ -337,31 +265,35 @@ int publish_flight_data (double* flight_data)
 	hil_sensors.magnetometer_cuttoff_freq_hz = 50.0f;
 
 	/* baro */
+	hil_sensors.baro_counter = hil_counter;
 	hil_sensors.baro_pres_mbar = abs_pressure;
 	hil_sensors.baro_alt_meter = pressure_alt;
 	hil_sensors.baro_temp_celcius = tempC;
 
-	hil_sensors.gyro_counter = hil_counter;
-	hil_sensors.magnetometer_counter = hil_counter;
-	hil_sensors.accelerometer_counter = hil_counter;
-
 	/* differential pressure */
-	hil_sensors.differential_pressure_pa = diff_pressure * 1e2f; //from hPa to Pa
 	hil_sensors.differential_pressure_counter = hil_counter;
+	hil_sensors.differential_pressure_pa = diff_pressure * 1e2f; //from hPa to Pa
 
 
 	/* airspeed from differential pressure, ambient pressure and temp */
 	//airspeed.indicated_airspeed_m_s = calc_indicated_airspeed(hil_sensors.differential_pressure_pa);
-	airspeed.indicated_airspeed_m_s = tas;
+	airspeed.indicated_airspeed_m_s = tas;	// XXX airspeed should be obtained from differential pressure so here diff_press should be published
 	airspeed.true_airspeed_m_s = tas;
 
-	if (orb_publish (ORB_ID(sensor_airspeed), pub_hil_airspeed, &airspeed) < 0)
+	if (orb_publish (ORB_ID(airspeed), pub_hil_airspeed, &airspeed) < 0)
 	{
 		fprintf (stderr, "Comunicator thread failed to publish the airspeed topic\n");
 		return_value = -1;
 	}
 
-	//warnx("SENSOR: IAS: %6.2f TAS: %6.2f", airspeed.indicated_airspeed_m_s, airspeed.true_airspeed_m_s);
+	/* optical_flow used only for ground distance */
+	flow.ground_distance_m = alt - ground_level;	// XXX optical flow is necessary for now (in the position_estimator) but maybe using position_estimator_mc it would be not
+
+	if (orb_publish (ORB_ID(sensor_optical_flow), pub_hil_flow, &flow) < 0)
+	{
+		fprintf (stderr, "Comunicator thread failed to publish the optical_flow topic\n");
+		return_value = -1;
+	}
 
 	/* individual sensor publications */
 	gyro.x_raw = xgyro / mrad2rad;
@@ -449,31 +381,40 @@ int publish_flight_data (double* flight_data)
 
 
 	/* gps */
-	hil_gps.timestamp_position = time_usec;
+	hil_gps.timestamp_time = time_usec;
 	hil_gps.time_gps_usec = time_usec;
-	hil_gps.lat = lat;
-	hil_gps.lon = lon;
-	hil_gps.alt = alt;
-	hil_gps.eph_m = (float) eph / m2cm; // from cm to m
-	hil_gps.epv_m = (float) epv / m2cm; // from cm to m
+
+	hil_gps.timestamp_position = time_usec;
+	hil_gps.latitude = lat*rad2degE7;
+	hil_gps.longitude = lon*rad2degE7;
+	hil_gps.altitude = alt*m2mm;
+
+	hil_gps.timestamp_variance = time_usec;
+	hil_gps.eph_m = eph; // from cm to m
+	hil_gps.epv_m = epv; // from cm to m
 	hil_gps.s_variance_m_s = 5.0f;
 	hil_gps.p_variance_m = hil_gps.eph_m * hil_gps.eph_m;
-	hil_gps.vel_m_s = (float) vel / m2cm; // from cm/s to m/s
+	hil_gps.c_variance_rad = 0; // XXX fix it
+	hil_gps.fix_type = fix_type;
 
-	/* gps.cog is in degrees 0..360 * 100, heading is -PI..+PI */
-	float heading_rad = cog * M_DEG_TO_RAD / m2cm;
+	/* gps.cog is in degrees 0..360, heading is -PI..+PI */
+	heading_rad = cog * M_DEG_TO_RAD;
 
 	/* go back to -PI..PI */
 	if (heading_rad > M_PI)
 		heading_rad -= 2.0f * M_PI;
 
-	hil_gps.vel_n_m_s = vn / m2cm; // from cm to m
-	hil_gps.vel_e_m_s = ve / m2cm; // from cm to m
-	hil_gps.vel_d_m_s = vd / m2cm; // from cm to m
+	hil_gps.timestamp_velocity = time_usec;
+	hil_gps.vel_m_s = vel; // from cm/s to m/s
+	hil_gps.vel_n_m_s = vn;
+	hil_gps.vel_e_m_s = ve;
+	hil_gps.vel_d_m_s = vd;
 	hil_gps.vel_ned_valid = 1;
+
 	/* COG (course over ground) is spec'ed as -PI..+PI */
 	hil_gps.cog_rad = heading_rad;
-	hil_gps.fix_type = fix_type;
+
+	hil_gps.timestamp_satellites = time_usec;
 	hil_gps.satellites_visible = satellites_visible;
 
 	/* publish GPS measurement data */
@@ -484,52 +425,21 @@ int publish_flight_data (double* flight_data)
 	}
 
 
-	hil_global_pos.valid = 1;
+	hil_global_pos.latitude = lat*rad2degE7;
+	hil_global_pos.longitude = lon*rad2degE7;
+	hil_global_pos.altitude = alt;
+	hil_global_pos.vx = vx;
+	hil_global_pos.vy = vy;
+	hil_global_pos.vz = vz;
 	hil_global_pos.yaw = psi;
-	hil_global_pos.latitude = lat;
-	hil_global_pos.longitude = lon;
-	hil_global_pos.altitude = alt / m2mm;
-	hil_global_pos.relative_altitude = alt / m2mm; // XXX set really relative to home pos
-	hil_global_pos.ground_level = gl;
-	hil_global_pos.vx = vx / m2cm;
-	hil_global_pos.vy = vy / m2cm;
-	hil_global_pos.vz = vz / m2cm;
-	hil_global_pos.landed = land_detector ();
+	hil_global_pos.ground_level = ground_level;
 
-	if (orb_publish (ORB_ID(vehicle_global_position), pub_hil_global_pos, &hil_global_pos) < 0)
+	if (orb_publish (ORB_ID(vehicle_hil_global_position), pub_hil_global_pos, &hil_global_pos) < 0)
 	{
-		fprintf (stderr, "Comunicator thread failed to publish the vehicle_global_position topic\n");
+		fprintf (stderr, "Comunicator thread failed to publish the vehicle_hil_global_position topic\n");
 		return_value = -1;
 	}
 
-
-	/*
-	// Calculate Rotation Matrix
-	math::Quaternion q(hil_state.attitude_quaternion);
-	math::Dcm C_nb(q);
-	math::EulerAngles euler(C_nb);
-
-	// set rotation matrix
-	for (i = 0; i < 3; i++)
-		for (j = 0; j < 3; j++)
-			hil_attitude.R[i][j] = C_nb(i, j);
-
-	hil_attitude.R_valid = 1;
-
-	// set quaternion
-	hil_attitude.q[0] = q(0);
-	hil_attitude.q[1] = q(1);
-	hil_attitude.q[2] = q(2);
-	hil_attitude.q[3] = q(3);
-	hil_attitude.q_valid = 1;
-
-	hil_attitude.roll = euler.getPhi();
-	hil_attitude.pitch = euler.getTheta();
-	hil_attitude.yaw = euler.getPsi();
-	hil_attitude.rollspeed = hil_state.rollspeed;
-	hil_attitude.pitchspeed = hil_state.pitchspeed;
-	hil_attitude.yawspeed = hil_state.yawspeed;
-	*/
 
 	/* set rotation matrix */
 	for (i = 0; i < 3; i++)
@@ -559,9 +469,9 @@ int publish_flight_data (double* flight_data)
 	hil_attitude.pitch_acc = 0;
 	hil_attitude.yaw_acc = 0;
 
-	hil_attitude.vx = vx / m2cm;
-	hil_attitude.vy = vy / m2cm;
-	hil_attitude.vz = vz / m2cm;
+	hil_attitude.vx = vx;
+	hil_attitude.vy = vy;
+	hil_attitude.vz = vz;
 	hil_attitude.ax = xacc * mg2ms2;
 	hil_attitude.ay = yacc * mg2ms2;
 	hil_attitude.az = zacc * mg2ms2;
@@ -586,14 +496,21 @@ void* comunicator_loop (void* args)
 	double FlightGear_flight_data [FDM_N_PROPERTIES];		// FDM data
 	struct sockaddr_in output_sockaddr;
 	int poll_return_value;
-	absolute_time usec_max_poll_wait_time = 250000;
+	absolute_time usec_max_poll_wait_time = 100000;
+
 	
-	
-	// ************************************* subscribe and advertise ******************************************
+	// ************************************* advertise ******************************************
 	pub_hil_gps = orb_advertise (ORB_ID(vehicle_gps_position));
 	if (pub_hil_gps == -1)
 	{
 		fprintf (stderr, "Comunicator thread failed to advertise the vehicle_gps_position topic\n");
+		exit (-1);
+	}
+
+	pub_hil_global_pos = orb_advertise (ORB_ID(vehicle_hil_global_position));
+	if (pub_hil_global_pos == -1)
+	{
+		fprintf (stderr, "Comunicator thread failed to advertise the vehicle_hil_global_position topic\n");
 		exit (-1);
 	}
 
@@ -625,6 +542,13 @@ void* comunicator_loop (void* args)
 		exit (-1);
 	}
 
+	pub_hil_flow = orb_advertise (ORB_ID(sensor_optical_flow));
+	if (pub_hil_flow == -1)
+	{
+		fprintf (stderr, "Comunicator thread failed to advertise the sensor_optical_flow topic\n");
+		exit (-1);
+	}
+
 	pub_hil_baro = orb_advertise (ORB_ID(sensor_baro));
 	if (pub_hil_baro == -1)
 	{
@@ -632,7 +556,7 @@ void* comunicator_loop (void* args)
 		exit (-1);
 	}
 
-	pub_hil_airspeed = orb_advertise (ORB_ID(sensor_airspeed));
+	pub_hil_airspeed = orb_advertise (ORB_ID(airspeed));
 	if (pub_hil_airspeed == -1)
 	{
 		fprintf (stderr, "Comunicator thread failed to advertise the airspeed topic\n");
@@ -646,13 +570,6 @@ void* comunicator_loop (void* args)
 		exit (-1);
 	}
 
-	pub_hil_global_pos = orb_advertise (ORB_ID(vehicle_global_position));
-	if (pub_hil_global_pos == -1)
-	{
-		fprintf (stderr, "Comunicator thread failed to advertise the vehicle_global_position topic\n");
-		exit (-1);
-	}
-
 	pub_hil_attitude = orb_advertise (ORB_ID(vehicle_hil_attitude));
 	if (pub_hil_attitude == -1)
 	{
@@ -660,24 +577,12 @@ void* comunicator_loop (void* args)
 		exit (-1);
 	}
 
-	actuator_controls_sub = orb_subscribe (ORB_ID(actuator_controls));
-	if (actuator_controls_sub == -1)
+
+	// ************************************* subscribe ******************************************
+	orb_subscr_t actuator_outputs_sub = orb_subscribe (ORB_ID_VEHICLE_CONTROLS);
+	if (actuator_outputs_sub == -1)
 	{
 		fprintf (stderr, "Comunicator thread failed to subscribe the actuator_controls topic\n");
-		exit (-1);
-	}
-
-	armed_sub = orb_subscribe (ORB_ID(actuator_armed));
-	if (armed_sub == -1)
-	{
-		fprintf (stderr, "Comunicator thread failed to subscribe the actuator_armed topic\n");
-		exit (-1);
-	}
-
-	param_sub = orb_subscribe (ORB_ID(parameter_update));
-	if (param_sub == -1)
-	{
-		fprintf (stderr, "Comunicator thread failed to subscribe the parameter_update topic\n");
 		exit (-1);
 	}
 
@@ -729,10 +634,12 @@ void* comunicator_loop (void* args)
 
 	memset (&airspeed, 0, sizeof(airspeed));
 	memset (&hil_attitude, 0, sizeof(hil_attitude));
+	/*
 	memset (&hil_global_pos, 0, sizeof(hil_global_pos));
 #ifndef START_IN_AIR
 	hil_global_pos.landed = 1;
 #endif
+	*/
 	
 	// **************************************** start primary loop ******************************************
 	while (!_shutdown_all_systems)
@@ -777,26 +684,20 @@ void* comunicator_loop (void* args)
 		if (!getenv("DO_NOT_SEND_CONTROLS"))
 		{
 
-			if (orb_check(ORB_ID(actuator_armed), armed_sub))
-			{
-				orb_copy(ORB_ID(actuator_armed), armed_sub, &armed);
-			}
-
-
 			// wait for the result of the autopilot logic calculation
-			poll_return_value = orb_poll (ORB_ID(actuator_controls), actuator_controls_sub, usec_max_poll_wait_time);
+			poll_return_value = orb_poll (ORB_ID_VEHICLE_CONTROLS, actuator_outputs_sub, usec_max_poll_wait_time);
 			if (poll_return_value < 0)
 			{
 				// that's undesiderable but there is not much we can do
 				fprintf (stderr, "Comunicator thread experienced an error waiting for actuator_controls topic\n");
 			}
-			if (!poll_return_value)
+			else if (!poll_return_value)
 			{
 				// that's undesiderable but there is not much we can do
 				//fprintf (stderr, "Comunicator thread experienced a timeout whike waiting for actuator_controls topic\n");
 			}
 			else
-				orb_copy (ORB_ID(actuator_controls), actuator_controls_sub, (void *) &actuator_controls);
+				orb_copy (ORB_ID_VEHICLE_CONTROLS, actuator_outputs_sub, (void *) &actuator_outputs);
 			
 			
 			// OUTPUTS
@@ -822,9 +723,20 @@ void* comunicator_loop (void* args)
 	}
 	
 	
-	// *********************************** unsubscribe and unadvertise ****************************************
+	/*
+	 * do unsubscriptions
+	 */
+	if (orb_unsubscribe (ORB_ID_VEHICLE_CONTROLS, actuator_outputs_sub, pthread_self()) < 0)
+		fprintf (stderr, "Comunicator thread failed to unsubscribe to actuator_outputs topic\n");
+
+	/*
+	 * do unadvertises
+	 */
 	if (orb_unadvertise (ORB_ID(vehicle_gps_position), pub_hil_gps, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the vehicle_gps_position topic\n");
+
+	if (orb_unadvertise (ORB_ID(vehicle_hil_global_position), pub_hil_global_pos, pthread_self()) < 0)
+		fprintf (stderr, "Comunicator thread failed to unadvertise the vehicle_hil_global_position topic\n");
 
 	if (orb_unadvertise (ORB_ID(sensor_combined), pub_hil_sensors, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the sensor_combined topic\n");
@@ -838,30 +750,22 @@ void* comunicator_loop (void* args)
 	if (orb_unadvertise (ORB_ID(sensor_mag), pub_hil_mag, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the sensor_mag topic\n");
 
+	if (orb_unadvertise (ORB_ID(sensor_optical_flow), pub_hil_flow, pthread_self()) < 0)
+		fprintf (stderr, "Comunicator thread failed to unadvertise the sensor_optical_flow topic\n");
+
 	if (orb_unadvertise (ORB_ID(sensor_baro), pub_hil_baro, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the sensor_baro topic\n");
 
-	if (orb_unadvertise (ORB_ID(sensor_airspeed), pub_hil_airspeed, pthread_self()) < 0)
+	if (orb_unadvertise (ORB_ID(airspeed), pub_hil_airspeed, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the airspeed topic\n");
 
 	if (orb_unadvertise (ORB_ID(battery_status), pub_hil_battery, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the battery_status topic\n");
 
-	if (orb_unadvertise (ORB_ID(vehicle_global_position), pub_hil_global_pos, pthread_self()) < 0)
-		fprintf (stderr, "Comunicator thread failed to unadvertise the vehicle_global_position topic\n");
-
 	if (orb_unadvertise (ORB_ID(vehicle_hil_attitude), pub_hil_attitude, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the vehicle_hil_attitude topic\n");
-
-	if (orb_unsubscribe (ORB_ID(actuator_controls), actuator_controls_sub, pthread_self()) < 0)
-		fprintf (stderr, "Comunicator thread failed to unsubscribe to actuator_controls topic\n");
-
-	if (orb_unsubscribe (ORB_ID(actuator_armed), armed_sub, pthread_self()) < 0)
-		fprintf (stderr, "Comunicator thread failed to unsubscribe to actuator_controls topic\n");
-
-	if (orb_unsubscribe (ORB_ID(parameter_update), param_sub, pthread_self()) < 0)
-		fprintf (stderr, "Comunicator thread failed to unsubscribe to actuator_controls topic\n");
 	
+
 	pthread_exit(&comunicator_thread_return_value);
 	return 0;
 }

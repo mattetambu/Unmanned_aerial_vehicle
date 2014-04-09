@@ -8,17 +8,17 @@
 	#include "../ORB/topics/mission.h"
 
 
-	#define ALWAYS_HAVE_A_MISSION
-	#define ABORT_ON_MISSION_FILE_ERROR
 	#define DEFAULT_MISSION_FILE_NAME	"dafault_mission.xml"
 	
 	// mission parameters
 	// those parameters for now are only indicative
+	#define MIN_WAYPOINT_RADIUS		5		//meters
+	#define DEFAULT_WAYPOINT_RADIUS	10		//meters
+	#define MIN_LOITER_RADIUS		10		//meters
 	#define DEFAULT_LOITER_RADIUS	15		//meters
 	
 	#define MIN_WAYPOINT_ALTITUDE	10		//meters
 	#define MIN_LOITER_ALTITUDE		10		//meters
-	#define MIN_LOITER_RADIUS		10		//meters
 	#define MIN_RTL_ALTITUDE		10		//meters
 	#define MIN_TAKEOFF_ALTITUDE	10		//meters
 	#define MIN_LAND_ALTITUDE		10		//meters
@@ -29,13 +29,13 @@
 	#define MAX_TAKEOFF_ALTITUDE	100		//meters
 	#define MAX_LAND_ALTITUDE		100		//meters
 	
+	#define MIN_LOITER_TIME			10		//seconds
+	#define MIN_LOITER_ROUNDS		1		//complete rounds
+
 	#define MIN_SET_ALTITUDE		10		//meters
 	#define MAX_SET_ALTITUDE		100		//meters
 	#define MIN_SET_SPEED			10		//meters/seconds
 	#define MAX_SET_SPEED			100		//meters/seconds
-	
-	#define MIN_LOITER_TIME			10		//seconds
-	#define MIN_LOITER_ROUNDS		1		//complete rounds
 	
 		
 	/* function prototypes */

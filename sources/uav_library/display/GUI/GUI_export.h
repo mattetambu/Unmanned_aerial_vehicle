@@ -15,7 +15,7 @@
 	#include "../../../simulator/FlightGear_exchanged_data.h"
 	
 	#define GTK_MULTITHREAD
-	#define MAX_TEXT_ROW_LENGTH				100
+	#define MAX_TEXT_ROW_LENGTH				150
 
 
 	enum
@@ -61,12 +61,13 @@
 	extern orb_subscr_t GUI_airspeed_sub;	/* Subscription to airspeed topic */
 	extern orb_subscr_t GUI_vehicle_global_position_sub;	/* Subscription to vehicle_global_position topic */
 	extern orb_subscr_t GUI_vehicle_hil_attitude_sub;	/* Subscription to vehicle_hil_attitude topic */
-	extern orb_subscr_t GUI_actuator_controls_sub;	/* Subscription to actuator_controls topic */
+	extern orb_subscr_t GUI_actuator_effective_controls_sub;	/* Subscription to actuator_effective_controls topic */
 	extern orb_subscr_t GUI_actuator_armed_sub;	/* Subscription to actuator_armed topic */
 	extern orb_subscr_t GUI_safety_sub;	/* Subscription to safety topic */
 	extern orb_subscr_t GUI_home_position_sub;	/* Subscription to home_position topic */
 	extern orb_subscr_t GUI_takeoff_position_sub;	/* Subscription to takeoff_position topic */
 	extern struct vehicle_global_position_s GUI_vehicle_global_position;
+	extern struct actuator_armed_s GUI_actuator_armed;
 
 #endif
 

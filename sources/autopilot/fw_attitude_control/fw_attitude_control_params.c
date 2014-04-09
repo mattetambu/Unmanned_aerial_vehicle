@@ -110,7 +110,7 @@ int fw_attitude_control_params_define ()
 	return 0;
 }
 
-int fw_attitude_control_parameters_update()
+int fw_attitude_control_params_update()
 {
 	PARAM_GET(_fw_attitude_control_parameter_handles.tconst, &(_fw_attitude_control_parameters.tconst));
 	PARAM_GET(_fw_attitude_control_parameter_handles.p_p, &(_fw_attitude_control_parameters.p_p));
@@ -166,7 +166,7 @@ int fw_attitude_control_parameters_update()
 }
 
 
-int fw_attitude_control_param_init ()
+int fw_attitude_control_params_init ()
 {
 	_fw_attitude_control_parameter_handles.tconst = param_find("FW_ATT_TC");
 	_fw_attitude_control_parameter_handles.p_p = param_find("FW_P_P");
@@ -194,5 +194,5 @@ int fw_attitude_control_param_init ()
 	_fw_attitude_control_parameter_handles.airspeed_max = param_find("FW_AIRSPD_MAX");
 
 	/* fetch initial parameter values */
-	return fw_attitude_control_parameters_update();
+	return fw_attitude_control_params_update();
 }

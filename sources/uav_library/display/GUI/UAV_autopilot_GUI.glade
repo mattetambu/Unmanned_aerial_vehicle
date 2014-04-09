@@ -141,7 +141,7 @@
                                       <widget class="GtkLabel" id="Ground_level_label">
                                         <property name="width_request">1</property>
                                         <property name="visible">True</property>
-                                        <property name="label" translatable="yes">Ground level [m]</property>
+                                        <property name="label" translatable="yes">Ground_level [m]</property>
                                         <property name="ellipsize">middle</property>
                                       </widget>
                                       <packing>

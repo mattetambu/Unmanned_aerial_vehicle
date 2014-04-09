@@ -33,13 +33,14 @@ PROPERTY TAG
 ACCEPTED_PROPERTY
 	COMMAND
 		COMMAND_NAME	PROPERTY_NAME
-		WAYPOIT			altitude, latitude*, longitude*
-		LOITER			altitude, seconds, rounds, mode 
-						//mode=[clockwise/anticlockwise]
-						//if both seconds and rounds are set then rounds is discarded
-						//if both seconds and rounds are not set then it means LOITER_UNLIM 
-		RTL				altitude	
-		TAKEOFF/LAND	altitude
+		WAYPOIT			altitude*, latitude*, longitude*, radius
+		LOITER_TIME		altitude*, latitude*, longitude*, radius, mode, seconds*
+		LOITER_CIRCLE	altitude*, latitude*, longitude*, radius, mode, rounds*
+		LOITER_UNLIM	altitude*, latitude*, longitude*, radius, mode 
+						//mode=[clockwise/anticlockwise] 
+		RTL				altitude*	
+		TAKEOFF			altitude*, latitude*, longitude*, radius
+		LAND			altitude*
 	
 	CONTROL
 		CONTROL_NAME	PROPERTY_NAME
@@ -56,14 +57,15 @@ ACCEPTED_PROPERTY
 
 PROPERTY to OPTION assignament for list storing
     COMMAND
-		COMMAND_NAME	OPZ1			OPZ2			OPZ3			OPZ4
-		WAYPOIT			altitude		latitude		longitude		-
-		LOITER			altitude		mode			value			radius
-						// value=0 means loiter_unlim
-						// value>0 means loiter_time
-						// value<0 means loiter_circle
+		COMMAND_NAME	OPZ1			OPZ2			OPZ3			OPZ4			OPZ5
+		WAYPOIT			altitude		latitude		longitude		radius			-
+		LOITER_TIME		altitude		latitude		longitude		radius			value
+		LOITER_CIRCLE	altitude		latitude		longitude		radius			value
+		LOITER_UNLIM	altitude		latitude		longitude		radius			value
+						// value>0 means cloackwise
+						// value<0 means anticlockwise
 		RTL				altitude		-				-				-
-		TAKEOFF			altitude		-				-				-
+		TAKEOFF			altitude		latitude		longitude		radius
 		LAND			altitude		-				-				-
 
 	CONTROL
@@ -88,3 +90,4 @@ PROPERTY to OPTION assignament for list storing
 	I figli di oggetti che non ne prevedono generano errore
 	Una missione senza comandi genera errore
 	Un jump a un id non presente genera errore
+	Se al termine di una missione non è presente un comando di land allora verrà aggiunto un loiter_unlim nella posizione di home

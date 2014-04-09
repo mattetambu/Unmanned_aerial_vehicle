@@ -11,7 +11,7 @@
 	#include "../../ORB/topics/safety.h"
 	#include "../../ORB/topics/vehicle_control_flags.h"
 	#include "../../ORB/topics/actuator/actuator_armed.h"
-	#include "../../ORB/topics/position/vehicle_global_position.h"
+	#include "../../ORB/topics/position/vehicle_local_position.h"
 	#include "../../ORB/topics/setpoint/manual_control_setpoint.h"
 	#include "../../uav_library/common.h"
 
@@ -26,7 +26,7 @@
 	/* function prototypes */
 	bool_t is_safe(const struct vehicle_status_s *current_state, const struct safety_s *safety, const struct actuator_armed_s *armed);
 	transition_result_t check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicle_status_s *current_status);
-	transition_result_t check_navigation_state_machine(struct vehicle_status_s *status, struct vehicle_control_flags_s *control_flags, struct vehicle_global_position_s *global_pos);
+	transition_result_t check_navigation_state_machine(struct vehicle_status_s *status, struct vehicle_control_flags_s *control_flags, struct vehicle_local_position_s *local_pos);
 	bool_t check_arming_state_changed();
 	bool_t check_main_state_changed();
 	bool_t check_navigation_state_changed();

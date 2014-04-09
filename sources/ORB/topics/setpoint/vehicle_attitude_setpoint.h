@@ -9,6 +9,7 @@
 	#include <stdint.h>
 	#include "../../ORB.h"
 	#include "../../../uav_library/common.h"
+	#include "../../../uav_library/time/drv_time.h"
 
 	/**
 	 * @addtogroup topics
@@ -20,6 +21,8 @@
 	 */
 	struct vehicle_attitude_setpoint_s
 	{
+		absolute_time timestamp;
+
 		float roll_body;			/**< body angle in NED frame */
 		float pitch_body;			/**< body angle in NED frame */
 		float yaw_body;				/**< body angle in NED frame */

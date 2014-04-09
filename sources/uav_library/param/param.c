@@ -98,8 +98,9 @@ int param_init ()
 void param_notify_changes()
 {
 	orb_advert_t param_adv = 0; // param_update is free published (no need of subscription)
-	struct parameter_update_s param_update = { .timestamp = get_absolute_time() };
+	struct parameter_update_s param_update;
 
+	param_update.timestamp = get_absolute_time();
 	orb_publish(ORB_ID(parameter_update), param_adv, &param_update);
 }
 
@@ -143,7 +144,11 @@ int param_define (const char *name, param_type_t p_type, const void *val)
 	for (param = 0; param < insert_param_count; param++) {
 		if (!strcmp(params_array[param].name, name))
 			{
-				fprintf (stderr, "Parameter \'%s\' already defined\n", name);
+				if (getenv("VERY_VERBOSE"))
+				{
+					fprintf (stderr, "Parameter \'%s\' already defined\n", name);
+				}
+
 				return param;
 			}
 	}

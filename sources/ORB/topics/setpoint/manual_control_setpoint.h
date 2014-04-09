@@ -39,10 +39,11 @@
 		float roll;				 	/**< ailerons roll / roll rate input */
 		float pitch;				/**< elevator / pitch / pitch rate */
 		float yaw;					/**< rudder / yaw rate / yaw */
-		float throttle;				/**< throttle / collective thrust / altitude */
+		float thrust;				/**< throttle / collective thrust / altitude */
 		float flaps;				/**< flaps */
 
 		bool_t want_to_arm;
+		bool_t want_to_disarm;
 
 		mode_switch_pos_t mode_switch;				/**< 2/3 position switch (mandatory): manual, [support,] auto */
 		secondary_switch_pos_t second_switch;		/**< 2/3 position switch (optional) */

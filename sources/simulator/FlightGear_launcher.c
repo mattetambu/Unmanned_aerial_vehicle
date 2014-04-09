@@ -3,6 +3,8 @@
 #include <pthread.h>
 
 #include "FlightGear_launcher.h"
+
+#include "../uav_type.h"
 #include "../uav_library/common.h"
 #include "../uav_library/param/param.h"
 #include "../uav_library/io_ctrl/comunicator.h"
@@ -14,16 +16,19 @@ int launcher_thread_return_value = 0;
 void* FlightGear_launcher (void* args)
 {
 	int hil_enabled;
-	param_t hil_param;
+
+	char *aircraft_model_option = strdup ((char *) args);
+	char protocol_name[50];
 
 	int command_length = 0;
 	char* command;
 	char c_input_port[5], c_output_port[5];
-	
+
+
 	snprintf(c_input_port, 5, "%d", input_port);
 	snprintf(c_output_port, 5, "%d", output_port);
+	snprintf(protocol_name, 50, "%s_in_out_protocol-rad", (is_rotary_wing)? "multirotor" : "fixedwing");
 	
-	sleep(1);
 	
 #if defined(__CYGWIN__) || defined(CYGWIN) //CYGWIN
 	command_length += strlen ((char*) CYGWIN_FLIGHTGEAR_LANCH_COMMAND);
@@ -32,10 +37,8 @@ void* FlightGear_launcher (void* args)
 #endif
 
 
-
-
 	command_length += strlen ((char*) FLIGHTGEAR_LANCH_GENERAL_OPTIONS);
-	command_length += strlen ((char*) FLIGHTGEAR_LANCH_AIRCRAFT_OPTIONS);
+	command_length += strlen ((char*) aircraft_model_option);
 	command_length += strlen ((char*) FLIGHTGEAR_LANCH_AIRPORT_OPTIONS);
 	#ifdef START_IN_AIR
 		command_length += strlen ((char*) FLIGHTGEAR_LANCH_IN_AIR_OPTIONS);
@@ -45,7 +48,8 @@ void* FlightGear_launcher (void* args)
 					+ strlen ((char*) ",127.0.0.1,")
 					+ strlen ((char*) c_input_port)
 					+ strlen ((char*) ",***,") // *** means tcp or udp
-					+ strlen ((char*) OUTPUT_PROTOCOL_FILE_NAME);
+					+ strlen ((char*) protocol_name);
+
 
 	if (!getenv("DO_NOT_SEND_CONTROLS"))
 	{
@@ -54,7 +58,7 @@ void* FlightGear_launcher (void* args)
 						+ strlen ((char*) ",127.0.0.1,")
 						+ strlen ((char*) c_output_port)
 						+ strlen ((char*) ",***,") // *** means tcp or udp
-						+ strlen ((char*) INPUT_PROTOCOL_FILE_NAME);
+						+ strlen ((char*) protocol_name);
 	}
 	
 	command = malloc (command_length+1);
@@ -72,7 +76,7 @@ void* FlightGear_launcher (void* args)
 #endif
 
 	strcat (command, (char*) FLIGHTGEAR_LANCH_GENERAL_OPTIONS);
-	strcat (command, (char*) FLIGHTGEAR_LANCH_AIRCRAFT_OPTIONS);
+	strcat (command, (char*) aircraft_model_option);
 	strcat (command, (char*) FLIGHTGEAR_LANCH_AIRPORT_OPTIONS);
 	#ifdef START_IN_AIR
 		strcat (command, (char*) FLIGHTGEAR_LANCH_IN_AIR_OPTIONS);
@@ -86,7 +90,7 @@ void* FlightGear_launcher (void* args)
 		strcat (command, (char*) "tcp,");
 	else
 		strcat (command, (char*) "udp,");
-	strcat (command, (char*) OUTPUT_PROTOCOL_FILE_NAME);
+	strcat (command, (char*) protocol_name);
 
 	if (!getenv("DO_NOT_SEND_CONTROLS"))
 	{
@@ -99,7 +103,7 @@ void* FlightGear_launcher (void* args)
 			strcat (command, (char*) "tcp,");
 		else
 			strcat (command, (char*) "udp,");
-		strcat (command, (char*) INPUT_PROTOCOL_FILE_NAME);
+		strcat (command, (char*) protocol_name);
 	}
 
 	fprintf (stdout, "\nTrying to launch FlightGear ");
@@ -108,6 +112,9 @@ void* FlightGear_launcher (void* args)
 	fprintf (stdout, "\n");
 	fflush(stdout);
 	
+	// do not remove
+	sleep(1);
+
 	// export notification of hil on
 	hil_enabled = 1;
 	param_define_int("HIL_ENABLED", hil_enabled);
@@ -117,9 +124,12 @@ void* FlightGear_launcher (void* args)
 	free (command);
 	
 	// export notification of hil off
-	hil_enabled = 0;
-	hil_param = param_find("HIL_ENABLED");
-	param_set(hil_param, &hil_enabled);
+	/*
+	 * param_t hil_param;
+	 * hil_enabled = 0;
+	 * hil_param = param_find("HIL_ENABLED");
+	 * param_set(hil_param, &hil_enabled);
+	 */
 
 	pthread_exit(&launcher_thread_return_value);
 	return 0;

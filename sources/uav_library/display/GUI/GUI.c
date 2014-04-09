@@ -11,7 +11,7 @@
 #include "../../../simulator/FlightGear_exchanged_data.h"
 
 #include "../../../ORB/ORB.h"
-#include "../../../ORB/topics/sensors/sensor_airspeed.h"
+#include "../../../ORB/topics/sensors/airspeed.h"
 #include "../../../ORB/topics/mission.h"
 #include "../../../ORB/topics/safety.h"
 #include "../../../ORB/topics/vehicle_hil_attitude.h"
@@ -19,7 +19,7 @@
 #include "../../../ORB/topics/position/home_position.h"
 #include "../../../ORB/topics/position/takeoff_position.h"
 #include "../../../ORB/topics/position/vehicle_global_position.h"
-#include "../../../ORB/topics/actuator/actuator_controls.h"
+#include "../../../ORB/topics/actuator/actuator_effective_controls.h"
 #include "../../../ORB/topics/actuator/actuator_armed.h"
 
 
@@ -71,7 +71,9 @@ void output_control_button_clicked (GtkWidget *button, gpointer user_data)
 
 void arm_button_clicked (GtkWidget *button, gpointer user_data)
 {
-	bool_t wta = (user_data == NULL)? !manual_control_setpoint.want_to_arm : *((bool_t *) user_data);
+	bool_t wta = (GUI_actuator_armed.armed)? 0 : *((bool_t *) user_data);
+	bool_t wtd = (!GUI_actuator_armed.armed)? 0 : *((bool_t *) user_data);
+
 	if (GUI_manual_control_sp_adv == -1)
 	{
 		// ********************** Ardvertise manual_control_setpoint topics ******************************
@@ -85,6 +87,7 @@ void arm_button_clicked (GtkWidget *button, gpointer user_data)
 	}
 
 	manual_control_setpoint.want_to_arm = wta;
+	manual_control_setpoint.want_to_disarm = wtd;
 
 	orb_publish(ORB_ID(manual_control_setpoint), GUI_manual_control_sp_adv, &manual_control_setpoint);
 }
@@ -227,34 +230,34 @@ void stop_GUI (GtkWidget *button, gpointer user_data)
 		fprintf (stderr, "Failed to unadvertise manual_control_setpoint topic\n");
 
 	// ************************************* unsubscribe ******************************************
-	if (orb_unsubscribe (ORB_ID(mission), GUI_mission_sub, mission_textview_updater_pid) < 0)
+	if (GUI_mission_sub != -1 && orb_unsubscribe (ORB_ID(mission), GUI_mission_sub, mission_textview_updater_pid) < 0)
 			fprintf (stderr, "Failed to unsubscribe to mission topic\n");
 
-	if (orb_unsubscribe (ORB_ID(mission_small), GUI_mission_small_sub, mission_textview_updater_pid) < 0)
+	if (GUI_mission_small_sub != -1 && orb_unsubscribe (ORB_ID(mission_small), GUI_mission_small_sub, mission_textview_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to mission_small topic\n");
 
-	if (orb_unsubscribe (ORB_ID(sensor_airspeed), GUI_airspeed_sub, flight_data_updater_pid) < 0)
+	if (GUI_airspeed_sub != -1 && orb_unsubscribe (ORB_ID(airspeed), GUI_airspeed_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to airspeed topic\n");
 
-	if (orb_unsubscribe (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, flight_data_updater_pid) < 0)
+	if (GUI_vehicle_global_position_sub != -1 && orb_unsubscribe (ORB_ID(vehicle_global_position), GUI_vehicle_global_position_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to vehicle_global_position topic\n");
 
-	if (orb_unsubscribe (ORB_ID(vehicle_hil_attitude), GUI_vehicle_hil_attitude_sub, flight_data_updater_pid) < 0)
+	if (GUI_vehicle_hil_attitude_sub != -1 && orb_unsubscribe (ORB_ID(vehicle_hil_attitude), GUI_vehicle_hil_attitude_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to vehicle_hil_attitude topic\n");
 
-	if (orb_unsubscribe (ORB_ID(actuator_controls), GUI_actuator_controls_sub, flight_data_updater_pid) < 0)
-		fprintf (stderr, "Failed to unsubscribe to actuator_controls topic\n");
+	if (GUI_actuator_effective_controls_sub != -1 && orb_unsubscribe (ORB_ID_VEHICLE_ATTITUDE_CONTROLS_EFFECTIVE, GUI_actuator_effective_controls_sub, flight_data_updater_pid) < 0)
+		fprintf (stderr, "Failed to unsubscribe to actuator_effective_controls topic\n");
 
-	if (orb_unsubscribe (ORB_ID(safety), GUI_safety_sub, flight_data_updater_pid) < 0)
+	if (GUI_safety_sub != -1 && orb_unsubscribe (ORB_ID(safety), GUI_safety_sub, flight_data_updater_pid) < 0)
 			fprintf (stderr, "Failed to unsubscribe to safety topic\n");
 
-	if (orb_unsubscribe (ORB_ID(actuator_armed), GUI_actuator_armed_sub, flight_data_updater_pid) < 0)
+	if (GUI_actuator_armed_sub != -1 && orb_unsubscribe (ORB_ID(actuator_armed), GUI_actuator_armed_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to actuator_armed topic\n");
 
-	if (orb_unsubscribe (ORB_ID(home_position), GUI_home_position_sub, flight_data_updater_pid) < 0)
+	if (GUI_home_position_sub != -1 && orb_unsubscribe (ORB_ID(home_position), GUI_home_position_sub, flight_data_updater_pid) < 0)
 			fprintf (stderr, "Failed to unsubscribe to home_position topic\n");
 
-	if (orb_unsubscribe (ORB_ID(takeoff_position), GUI_takeoff_position_sub, flight_data_updater_pid) < 0)
+	if (GUI_takeoff_position_sub != -1 && orb_unsubscribe (ORB_ID(takeoff_position), GUI_takeoff_position_sub, flight_data_updater_pid) < 0)
 		fprintf (stderr, "Failed to unsubscribe to takeoff_position topic\n");
 
 	GUI_safety_adv = -1;	/* safety topic */
@@ -264,7 +267,7 @@ void stop_GUI (GtkWidget *button, gpointer user_data)
 	GUI_airspeed_sub = -1;	/* Subscription to airspeed topic */
 	GUI_vehicle_global_position_sub = -1;	/* Subscription to vehicle_global_position topic */
 	GUI_vehicle_hil_attitude_sub = -1;	/* Subscription to vehicle_hil_attitude topic */
-	GUI_actuator_controls_sub = -1;	/* Subscription to actuator_controls topic */
+	GUI_actuator_effective_controls_sub = -1;	/* Subscription to actuator_effective_controls topic */
 	GUI_actuator_armed_sub = -1;	/* Subscription to actuator_armed topic */
 	GUI_safety_sub = -1;	/* Subscription to safety topic */
 	GUI_home_position_sub = -1;	/* Subscription to home_position topic */
@@ -425,7 +428,6 @@ void* start_GUI (void* args)
 	glade_xml_signal_connect (xml, "on_window_destroy", G_CALLBACK (gtk_main_quit));
 	g_signal_connect (G_OBJECT (main_window), "destroy", G_CALLBACK (stop_GUI), NULL);
 	g_signal_connect (G_OBJECT (output_control_button), "clicked", G_CALLBACK (output_control_button_clicked), NULL);
-	//g_signal_connect (G_OBJECT (arm_button), "clicked", G_CALLBACK (arm_button_clicked), NULL);
 	g_signal_connect (G_OBJECT (arm_button), "pressed", G_CALLBACK (arm_button_clicked), &_int_one);
 	g_signal_connect (G_OBJECT (arm_button), "released", G_CALLBACK (arm_button_clicked), &_int_zero);
 	g_signal_connect (G_OBJECT (safety_button), "clicked", G_CALLBACK (safety_button_clicked), NULL);

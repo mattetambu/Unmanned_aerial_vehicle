@@ -81,8 +81,8 @@
 
 	/* function prototypes */
 	int fw_position_control_params_define ();
-	int fw_position_control_parameters_update();
-	int fw_position_control_param_init ();
+	int fw_position_control_params_update ();
+	int fw_position_control_params_init ();
 
 	/* global variables */
 	// empty

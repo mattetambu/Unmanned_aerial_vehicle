@@ -15,7 +15,7 @@
 	/* definitions */
 	//#define INTERACTIVE
 	#define DEBUG
-	#define START_TEST_THREAD	1
+	#define START_TEST_THREAD	0
 	#define N_SPACES_PER_TAB	5
 	#define LENGTH_MISURE_UNIT	"meters"
 	#define ANGLE_MISURE_UNIT	"degrees"

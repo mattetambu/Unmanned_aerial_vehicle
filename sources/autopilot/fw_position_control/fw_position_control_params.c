@@ -46,7 +46,7 @@ int fw_position_control_params_define ()
 	return 0;
 }
 
-int fw_position_control_parameters_update()
+int fw_position_control_params_update()
 {
 	/* L1 control parameters */
 	PARAM_GET(_fw_position_control_parameter_handles.l1_damping, &(_fw_position_control_parameters.l1_damping));
@@ -112,7 +112,7 @@ int fw_position_control_parameters_update()
 }
 
 
-int fw_position_control_param_init ()
+int fw_position_control_params_init ()
 {
 	_fw_position_control_parameter_handles.l1_period = param_find("FW_L1_PERIOD");
 	_fw_position_control_parameter_handles.l1_damping = param_find("FW_L1_DAMPING");
@@ -144,5 +144,5 @@ int fw_position_control_param_init ()
 	_fw_position_control_parameter_handles.pitch_damping = param_find("FW_T_PTCH_DAMP");
 
 	/* fetch initial parameter values */
-	return fw_position_control_parameters_update();
+	return fw_position_control_params_update();
 }

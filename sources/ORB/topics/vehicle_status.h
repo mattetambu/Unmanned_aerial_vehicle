@@ -229,7 +229,7 @@
 		bool_t condition_launch_position_valid;		/**< indicates a valid launch position */
 		bool_t condition_home_position_valid;			/**< indicates a valid home position (a valid home position is not always a valid launch) */
 		bool_t condition_local_altitude_valid;
-		bool_t condition_airspeed_valid;				/**< set to true by the commander app if there is a valid airspeed measurement available */
+		//bool_t condition_airspeed_valid;				/**< set to true by the commander app if there is a valid airspeed measurement available */
 		
 		bool_t condition_system_returned_to_home;
 		bool_t condition_landed;						/**< true if vehicle is landed, always true if disarmed */

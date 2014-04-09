@@ -12,7 +12,7 @@
 #include "../../ORB/topics/vehicle_status.h"
 #include "../../ORB/topics/vehicle_control_flags.h"
 #include "../../ORB/topics/actuator/actuator_controls.h"
-#include "../../ORB/topics/position/vehicle_global_position.h"
+#include "../../ORB/topics/position/vehicle_local_position.h"
 #include "../../ORB/topics/setpoint/manual_control_setpoint.h"
 #include "../../uav_library/common.h"
 
@@ -74,7 +74,6 @@ check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicl
 				if (res != TRANSITION_DENIED)
 					break;	// changed successfully or already in this state
 
-				// else fallback to fly_by_wire
 				fprintf (stderr, "Can't switch to rtl flight mode\n");
 			}
 			else if (sp_man->second_switch == secondary_switch_loiter) {
@@ -82,7 +81,6 @@ check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicl
 				if (res != TRANSITION_DENIED)
 					break;	// changed successfully or already in this state
 
-				// else fallback to fly_by_wire
 				fprintf (stderr, "Can't switch to loiter flight mode\n");
 			}
 			else if (sp_man->second_switch == secondary_switch_mission) {
@@ -90,7 +88,6 @@ check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicl
 				if (res != TRANSITION_DENIED)
 					break;	// changed successfully or already in this state
 
-				// else fallback to fly_by_wire
 				fprintf (stderr, "Can't switch to mission flight mode\n");
 			}
 
@@ -118,7 +115,7 @@ check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicl
 
 
 transition_result_t
-check_navigation_state_machine(struct vehicle_status_s *status, struct vehicle_control_flags_s *control_flags, struct vehicle_global_position_s *global_pos)
+check_navigation_state_machine(struct vehicle_status_s *status, struct vehicle_control_flags_s *control_flags, struct vehicle_local_position_s *local_pos)
 {
 	transition_result_t res = TRANSITION_DENIED;
 
@@ -129,7 +126,7 @@ check_navigation_state_machine(struct vehicle_status_s *status, struct vehicle_c
 			}
 			if (status->navigation_state == navigation_state_auto_takeoff) {
 				/* don't switch to other states until takeoff not completed */
-				if ((global_pos->altitude - global_pos->ground_level) < takeoff_alt || status->condition_landed) {
+				if (local_pos->z > -takeoff_alt || status->condition_landed) {
 					return TRANSITION_NOT_CHANGED;
 				}
 			}
@@ -139,7 +136,7 @@ check_navigation_state_machine(struct vehicle_status_s *status, struct vehicle_c
 			    status->navigation_state != navigation_state_auto_mission &&
 			    status->navigation_state != navigation_state_auto_rtl) {
 				/* possibly on ground, switch to TAKEOFF if needed */
-				if ((global_pos->altitude - global_pos->ground_level) < takeoff_alt || status->condition_landed) {
+				if (local_pos->z > -takeoff_alt || status->condition_landed) {
 					res = navigation_state_transition(status, navigation_state_auto_takeoff, control_flags);
 					return res;
 				}

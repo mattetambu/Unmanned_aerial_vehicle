@@ -4,8 +4,14 @@
 #include <semaphore.h>
 
 #include "ORB.h"
+#include "topics/parameter_update.h"
+
 #include "../uav_library/common.h"
 #include "../uav_library/time/drv_time.h"
+
+
+// function prototypes
+int orb_controller_init (struct orb_metadata *meta);
 
 
 pthread_mutex_t orb_init_lock;
@@ -32,6 +38,8 @@ void system_orb_init ()
 
 	pthread_mutex_init (&orb_init_lock, NULL);
 	inizialized = 1;
+
+	orb_controller_init (ORB_ID(parameter_update));
 }
 
 
@@ -529,6 +537,7 @@ orb_wait (const struct orb_metadata *meta, orb_subscr_t subscriber)
 	return (!semwait_return_value && !_shutdown_all_systems)? 1 : 0;
 }
 
+
 int
 orb_stat (const struct orb_metadata *meta, orb_subscr_t subscriber, absolute_time *last_publish)
 {
@@ -538,6 +547,8 @@ orb_stat (const struct orb_metadata *meta, orb_subscr_t subscriber, absolute_tim
 		*last_publish = 0;
 		return -1;
 	}
+
+
 	// obtain the lock on the topic for the critical section
 	ORB_LOCK_TOPIC (&meta->obj_controller->_lock);
 	

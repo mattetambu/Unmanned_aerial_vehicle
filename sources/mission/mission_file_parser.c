@@ -98,7 +98,8 @@ int process_mission_node (xmlNode *node)
 		}
 	}
 	else mission_list->mode = mission_mode_resume;
-		
+
+	/*
 	if (xml_GetProp (node, "lastly", &property) >= 0)
 	{
 		if (mission_lastly_cmd_decode (property, &mission_list->lastly) < 0)
@@ -109,6 +110,7 @@ int process_mission_node (xmlNode *node)
 		}
 	}
 	else mission_list->lastly = mission_lastly_cmd_do_nothing;
+	*/
 	
 	return 0;
 }
@@ -117,6 +119,7 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 {
 	xmlChar *property = NULL;
 	loiter_mode_t loiter_mode = 0;
+	float min_radius, default_radius;
 	
 	if (xml_GetProp (node, "id", &property) >= 0)
 	{
@@ -143,24 +146,36 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 		return -1;
 	}
 	
-	if (xml_GetProp (node, "altitude", &property) >= 0)
+	if (xml_GetProp (node, "altitude", &property) < 0)
 	{
-		command->option1 = (float) atof ((const char *) property);
-		if (check_command_altitude (command->name, command->option1) < 0)
-		{
-			// already printed an error message
-			return -1;
-		}
+		fprintf (stderr, "Required property \'altitude\' for every \'command\' tag\n");
+		return -1;
 	}
-	
+	command->option1 = (float) atof ((const char *) property);
+	if (check_command_altitude (command->name, command->option1) < 0)
+	{
+		// already printed an error message
+		return -1;
+	}
+
 	switch (command->name)
 	{
 		case accepted_command_rtl:
-		case accepted_command_takeoff:
 		case accepted_command_land:
 			break;
 			
+		case accepted_command_takeoff:
 		case accepted_command_waypoint:
+		case accepted_command_loiter_time:
+		case accepted_command_loiter_circle:
+		case accepted_command_loiter_unlim:
+			min_radius = (command->name == accepted_command_loiter_time ||
+						  command->name == accepted_command_loiter_circle ||
+						  command->name == accepted_command_loiter_unlim)? MIN_LOITER_RADIUS : MIN_WAYPOINT_RADIUS;
+			default_radius = (command->name == accepted_command_loiter_time ||
+							  command->name == accepted_command_loiter_circle ||
+							  command->name == accepted_command_loiter_unlim)? DEFAULT_LOITER_RADIUS : DEFAULT_WAYPOINT_RADIUS;
+
 			if (xml_GetProp (node, "latitude", &property) < 0)
 			{
 				fprintf (stderr, "Required property \'latitude\' for command tag of type \'%s\'\n", accepted_command_to_string(command->name));
@@ -179,63 +194,92 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 				// already printed the error message
 				return -1;
 			}
-			break;
-			
-		case accepted_command_loiter:
-			if (xml_GetProp (node, "mode", &property) >= 0)
-			{
-				if (loiter_mode_decode (property, &loiter_mode) < 0)
-				{
-					fprintf (stderr, "Invalid property \'mode\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
-					fprintf (stderr, "Accepted values:\t[clockwise,anticlockwise]\n");
-					return -1;
-				}
-			}
-			command->option2 = (double) loiter_mode;
-			
-			if (xml_GetProp (node, "seconds", &property) >= 0)
-			{
-				command->option3 = (float) atof ((const char *) property);
-				if (command->option3 <= MIN_LOITER_TIME)
-				{
-					fprintf (stderr, "Invalid property \'seconds\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
-					fprintf (stderr, "It must be a positive number grater than %d seconds\n", MIN_LOITER_TIME);
-					return -1;
-				}
-			}
-			else if (xml_GetProp (node, "rounds", &property) >= 0)
-			{
-				command->option3 = (float) atof ((const char *) property);
-				if (command->option3 <= MIN_LOITER_ROUNDS)
-				{
-					fprintf (stderr, "Invalid property \'rounds\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
-					fprintf (stderr, "It must be a positive number grater than %d rounds\n", MIN_LOITER_ROUNDS);
-					return -1;
-				}
-				command->option3 = -command->option3;
-			}
-			// command->option3 == 0	->		loiter_unlim
-			// command->option3 > 0		->		loiter_time
-			// command->option3 < 0		->		loiter_circle
 			
 			if (xml_GetProp (node, "radius", &property) >= 0)
 			{
 				command->option4 = (float) atof ((const char *) property);
-				if (command->option4 <= MIN_LOITER_RADIUS)
+				if (command->option4 <= min_radius)
 				{
 					fprintf (stderr, "Invalid property \'radius\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
-					fprintf (stderr, "It must be a positive number grater than %d seconds\n", MIN_LOITER_RADIUS);
+					fprintf (stderr, "It must be a positive number grater than %f seconds\n", min_radius);
 					return -1;
 				}
 			}
-			command->option4 = (float) DEFAULT_LOITER_RADIUS;
+			command->option4 = (float) default_radius;
 			break;
-			
+
 		default:
 			// Command name not accepted in command tag
 			fprintf (stderr, "Invalid property \'name\' for command tag\n");
 			fprintf (stderr, "Accepted values:\t[waypoint,loiter,rtl,takeoff,land]\n");
 			return -1;
+	}
+
+
+	if (command->name == accepted_command_loiter_time ||
+		command->name == accepted_command_loiter_circle ||
+		command->name == accepted_command_loiter_unlim)
+	{
+		if (xml_GetProp (node, "mode", &property) >= 0)
+		{
+			if (loiter_mode_decode (property, &loiter_mode) < 0)
+			{
+				fprintf (stderr, "Invalid property \'mode\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
+				fprintf (stderr, "Accepted values:\t[clockwise,anticlockwise]\n");
+				return -1;
+			}
+		}
+	}
+
+	switch (command->name)
+	{
+		case accepted_command_loiter_time:
+			if (xml_GetProp (node, "seconds", &property) < 0)
+			{
+				fprintf (stderr, "Required property \'seconds\' for command tag of type \'%s\'\n", accepted_command_to_string(command->name));
+				return -1;
+			}
+			command->option5 = (double) atof ((const char *) property);
+			if (command->option5 <= MIN_LOITER_TIME)
+			{
+				fprintf (stderr, "Invalid property \'seconds\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
+				fprintf (stderr, "It must be a positive number grater than %d seconds\n", MIN_LOITER_TIME);
+				return -1;
+			}
+			if (loiter_mode == loiter_mode_anticlockwise)
+				command->option5 = -command->option5;
+
+			break;
+
+		case accepted_command_loiter_circle:
+			if (xml_GetProp (node, "rounds", &property) < 0)
+			{
+				fprintf (stderr, "Required property \'rounds\' for command tag of type \'%s\'\n", accepted_command_to_string(command->name));
+				return -1;
+			}
+			command->option5 = (double) atof ((const char *) property);
+			if (command->option5 <= MIN_LOITER_ROUNDS)
+			{
+				fprintf (stderr, "Invalid property \'rounds\' in command tag of type \'%s\'\n", accepted_command_to_string(command->name));
+				fprintf (stderr, "It must be a positive number grater than %d rounds\n", MIN_LOITER_ROUNDS);
+				return -1;
+			}
+
+			if (loiter_mode == loiter_mode_anticlockwise)
+				command->option5 = -command->option5;
+
+			break;
+
+		case accepted_command_loiter_unlim:
+			command->option5 = 0; // only for cloakwise / anticlockwise identification
+
+			if (loiter_mode == loiter_mode_anticlockwise)
+				command->option5 = -1;
+
+			break;
+			
+		default:
+			break;
 	}
 
 	return 0;
@@ -244,10 +288,12 @@ int process_command_node (xmlNode *node, int node_depth, mission_command_t *comm
 #ifdef ACCEPT_CONTROL_TAGS
 int process_control_node (xmlNode *node, int node_depth, mission_command_t *command)
 {
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 	condition_sign_t condition;
 	test_variable_t test_variable;
 	set_variable_t set_variable;
 	set_mode_t set_mode = 0;
+#endif
 	xmlChar *property = NULL;
 	
 	if (xml_GetProp (node, "id", &property) >= 0)
@@ -277,6 +323,7 @@ int process_control_node (xmlNode *node, int node_depth, mission_command_t *comm
 	
 	switch (command->name)
 	{
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 		case accepted_command_while:
 		case accepted_command_if:
 			if (xml_GetProp (node, "variable", &property) < 0)
@@ -350,7 +397,6 @@ int process_control_node (xmlNode *node, int node_depth, mission_command_t *comm
 				return -1;
 			}			
 			break;		
-	
 		case accepted_command_delay:
 			if (xml_GetProp (node, "seconds", &property) < 0)
 			{
@@ -380,6 +426,7 @@ int process_control_node (xmlNode *node, int node_depth, mission_command_t *comm
 				return -1;
 			}
 			break;
+#endif
 			
 		case accepted_command_repeat:
 			if (xml_GetProp (node, "times", &property) < 0)
@@ -452,7 +499,9 @@ int insert_command_end_in_mission_list (uint8_t command_depth)
 	
 	// no need to insert the end tag
 	if (support_list == NULL ||
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 		support_list->command->name == accepted_command_jump ||
+#endif
 		command_depth > support_list->command->depth)
 		return 0;
 
@@ -465,10 +514,12 @@ int insert_command_end_in_mission_list (uint8_t command_depth)
 	
 	switch (support_list->command->name)
 	{
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 		case accepted_command_jump:
 			return 0;
 		case accepted_command_while:
 		case accepted_command_if:
+#endif
 		case accepted_command_repeat:
 			command_end = *support_list->command;
 			command_end.name++;	// set command name as end of current tag
@@ -508,10 +559,14 @@ int update_support_list (mission_command_index_t command_index)
 		return -1;
 	}
 
-	if (command->name == accepted_command_jump ||
-		command->name == accepted_command_repeat ||
+	if (
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
+		command->name == accepted_command_jump ||
+		command->name == accepted_command_if ||
 		command->name == accepted_command_while ||
-		command->name == accepted_command_if)
+#endif
+		command->name == accepted_command_repeat
+		)
 	{
 		//add a node on the head of the list
 		support_elem = malloc (sizeof(mission_initialize_support_t));
@@ -526,7 +581,13 @@ int update_support_list (mission_command_index_t command_index)
 		support_elem->command = command;
 		support_elem->command_id = command_index;
 		
-		if (command->name != accepted_command_jump || support_list == NULL)
+		if (
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
+			command->name == accepted_command_if ||
+			command->name == accepted_command_while ||
+#endif
+			command->name == accepted_command_repeat
+			|| support_list == NULL)
 		{
 			// head insert
 			support_elem->next = support_list;
@@ -618,20 +679,26 @@ int mission_file_parse (xmlNode *current_node, int node_depth)
 int check_mission_integrity ()
 {
 #ifdef ACCEPT_CONTROL_TAGS
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 	mission_initialize_support_t *support_elem = NULL;
+#endif
 #endif
 	mission_command_t *command = NULL;
 	int mission_n_commands = 0, i;
 
+
+	// TODO maybe check if a repeat cicle as at least a valid child (such as wp, rtl,loiter)
 	for (i = 0; i < mission_list->n_commands; i++)
 	{
 		command = &mission_list->command_list[i];
 		// check that only if, while and repeat have a non-property child
 		if (i+1 < mission_list->n_commands && command->depth < mission_list->command_list[i+1].depth
 #ifdef ACCEPT_CONTROL_TAGS
-			&& command->name != accepted_command_repeat &&
-			command->name != accepted_command_while &&
-			command->name != accepted_command_if
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
+			&& command->name != accepted_command_while
+			&& command->name != accepted_command_if
+#endif
+			&& command->name != accepted_command_repeat
 #endif
 			)
 		{
@@ -640,9 +707,7 @@ int check_mission_integrity ()
 			return -1;
 		}
 
-#ifdef ACCEPT_CONTROL_TAGS
-		if (command->name < accepted_command_delay)
-#endif
+		if (command->name <= accepted_command_land)
 			mission_n_commands++;
 	}
 
@@ -656,6 +721,7 @@ int check_mission_integrity ()
 
 
 #ifdef ACCEPT_CONTROL_TAGS
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 	// check jump targets
 	while (support_list)
 	{
@@ -679,6 +745,7 @@ int check_mission_integrity ()
 		support_list = support_list->next;
 		free (support_elem);
 	}
+#endif
 #endif
 
 	return 0;

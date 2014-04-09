@@ -14,7 +14,7 @@
 
 
 	#define MAX_ADVERTISERS		10
-	#define MAX_SUBSCRIBERS		10
+	#define MAX_SUBSCRIBERS		15
 
 
 	typedef struct advertiser_data_t {
@@ -88,6 +88,11 @@
 		struct _name##_s __##_name;	\
 		extern struct orb_metadata __orb_##_name __attribute__((weak))
 
+	# define ORB_DECLARE_MANY(_name, _struct)	\
+		typedef _struct _name##_s;	\
+		_struct __##_name;	\
+		extern struct orb_metadata __orb_##_name
+
 
 	/**
 	 * Define (instantiate) the uORB metadata for a topic.
@@ -118,6 +123,7 @@
 			1,					\
 			NULL				\
 		}; struct hack
+
 	
 	/* function prototypes */
 	void system_orb_init ();

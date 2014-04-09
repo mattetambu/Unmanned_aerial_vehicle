@@ -35,32 +35,32 @@
 	struct sensor_combined_s {
 		absolute_time timestamp;
 		
+		uint32_t gyro_counter;			/**< Number of raw measurments taken              */
 		int16_t	gyro_raw[3];			/**< Raw sensor values of angular velocity        */
-		uint16_t gyro_counter;			/**< Number of raw measurments taken              */
 		float gyro_rad_s[3];			/**< Angular velocity in radian per seconds       */
 		
-		int16_t accelerometer_raw[3];		/**< Raw acceleration in NED body frame           */
 		uint32_t accelerometer_counter;		/**< Number of raw acc measurements taken         */
+		int16_t accelerometer_raw[3];		/**< Raw acceleration in NED body frame           */
 		float accelerometer_m_s2[3];		/**< Acceleration in NED body frame, in m/s^2     */
 		int accelerometer_mode;			/**< Accelerometer measurement mode */
 		float accelerometer_range_m_s2;		/**< Accelerometer measurement range in m/s^2 */
 
+		uint32_t magnetometer_counter;		/**< Number of raw mag measurements taken         */
 		int16_t	magnetometer_raw[3];		/**< Raw magnetic field in NED body frame         */
 		float magnetometer_ga[3];		/**< Magnetic field in NED body frame, in Gauss   */
 		int magnetometer_mode;			/**< Magnetometer measurement mode */
 		float magnetometer_range_ga;		/**< ± measurement range in Gauss */
 		float magnetometer_cuttoff_freq_hz;	/**< Internal analog low pass frequency of sensor */
-		uint32_t magnetometer_counter;		/**< Number of raw mag measurements taken         */
 		
+		uint32_t baro_counter;			/**< Number of raw baro measurements taken        */
 		float baro_pres_mbar;			/**< Barometric pressure, already temp. comp.     */
 		float baro_alt_meter;			/**< Altitude, already temp. comp.                */
 		float baro_temp_celcius;		/**< Temperature in degrees celsius               */
 		float adc_voltage_v[4];			/**< ADC voltages of ADC Chan 10/11/12/13 or -1      */
 		float mcu_temp_celcius;			/**< Internal temperature measurement of MCU */
-		uint32_t baro_counter;			/**< Number of raw baro measurements taken        */
 
-		float differential_pressure_pa;				/**< Airspeed sensor differential pressure                  */ 
 		uint32_t differential_pressure_counter;		/**< Number of raw differential pressure measurements taken */
+		float differential_pressure_pa;				/**< Airspeed sensor differential pressure                  */ 
 	};
 
 	/**

@@ -26,7 +26,7 @@
 #include <time.h>
 
 #include "../../ORB/ORB.h"
-#include "../../ORB/topics/sensors/sensor_airspeed.h"
+#include "../../ORB/topics/sensors/airspeed.h"
 #include "../../ORB/topics/sensors/sensor_accel.h"
 #include "../../ORB/topics/position/vehicle_global_position.h"
 #include "../../ORB/topics/setpoint/vehicle_global_position_set_triplet.h"
@@ -71,7 +71,7 @@ static struct vehicle_attitude_s _att;						/**< vehicle attitude */
 static struct vehicle_attitude_setpoint_s _att_sp;			/**< vehicle attitude setpoint */
 static struct navigation_capabilities_s _nav_capabilities;	/**< navigation capabilities */
 static struct manual_control_setpoint_s _manual;			/**< r/c channel data */
-static struct sensor_airspeed_s _airspeed;						/**< airspeed */
+static struct airspeed_s _airspeed;						/**< airspeed */
 static struct vehicle_control_flags_s _control_flags;		/**< vehicle status */
 static struct vehicle_global_position_s _global_pos;		/**< global vehicle position */
 static struct vehicle_global_position_set_triplet_s _global_triplet;	/**< triplet of global setpoints */
@@ -100,7 +100,7 @@ static float target_bearing;
 /* throttle and airspeed states */
 static float _airspeed_error = 0;				///< airspeed error to setpoint in m/s
 static bool_t _airspeed_valid = 0;				///< flag if a valid airspeed estimate exists
-uint64_t _airspeed_last_valid;			///< last time airspeed was valid. Used to detect sensor failures
+static absolute_time _airspeed_last_valid;			///< last time airspeed was valid. Used to detect sensor failures
 static float _groundspeed_undershoot = 0;		///< ground speed error to min. speed in m/s
 static bool_t _global_pos_valid = 0;				///< global position is valid
 static Dcm _R_nb;				///< current attitude
@@ -131,10 +131,10 @@ static void vehicle_control_mode_poll()
 static bool_t vehicle_airspeed_poll()
 {
 	/* check if there is an airspeed update or if it timed out */
-	bool_t airspeed_updated = orb_check(ORB_ID(sensor_airspeed), _airspeed_sub);
+	bool_t airspeed_updated = orb_check(ORB_ID(airspeed), _airspeed_sub);
 
 	if (airspeed_updated) {
-		orb_copy(ORB_ID(sensor_airspeed), _airspeed_sub, &_airspeed);
+		orb_copy(ORB_ID(airspeed), _airspeed_sub, &_airspeed);
 		_airspeed_valid = 1 /* true */;
 		_airspeed_last_valid = get_absolute_time();
 		return 1 /* true */;
@@ -345,7 +345,9 @@ int control_position(Vector *current_position, Vector *ground_speed)
 								_airspeed.indicated_airspeed_m_s, eas2tas, 0 /* false */, radians(_fw_position_control_parameters.pitch_limit_min),
 								_fw_position_control_parameters.throttle_min, _fw_position_control_parameters.throttle_max, _fw_position_control_parameters.throttle_cruise, radians(_fw_position_control_parameters.pitch_limit_min), radians(_fw_position_control_parameters.pitch_limit_max));
 
-			} else if (_global_triplet.current.nav_cmd == navigation_command_loiter) {
+			} else if (_global_triplet.current.nav_cmd == navigation_command_loiter_time ||
+						_global_triplet.current.nav_cmd == navigation_command_loiter_circle ||
+						_global_triplet.current.nav_cmd == navigation_command_loiter_unlim) {
 
 				/* waypoint is a loiter waypoint */
 				ECL_l1_position_controller_navigate_loiter(&next_wp, current_position, _global_triplet.current.loiter_radius, _global_triplet.current.loiter_direction, ground_speed);
@@ -550,7 +552,7 @@ int control_position(Vector *current_position, Vector *ground_speed)
 		climb_out = 0 /* false */;
 
 		/* user wants to climb out */
-		if (_manual.pitch > 0.3f && _manual.throttle > 0.8f) {
+		if (_manual.pitch > 0.3f && _manual.thrust > 0.8f) {
 			climb_out = 1 /* true */;
 		}
 
@@ -559,7 +561,7 @@ int control_position(Vector *current_position, Vector *ground_speed)
 		// XXX check if ground speed undershoot should be applied here
 		float seatbelt_airspeed = _fw_position_control_parameters.airspeed_min +
 					 (_fw_position_control_parameters.airspeed_max - _fw_position_control_parameters.airspeed_min) *
-					 _manual.throttle;
+					 _manual.thrust;
 
 		ECL_l1_position_controller_navigate_heading(_seatbelt_hold_heading, _att.yaw, ground_speed);
 		_att_sp.roll_body = ECL_l1_position_controller_nav_roll();
@@ -587,10 +589,10 @@ int control_position(Vector *current_position, Vector *ground_speed)
 		// XXX check if ground speed undershoot should be applied here
 		float seatbelt_airspeed = _fw_position_control_parameters.airspeed_min +
 					 (_fw_position_control_parameters.airspeed_max - _fw_position_control_parameters.airspeed_min) *
-					 _manual.throttle;
+					 _manual.thrust;
 
 		/* user switched off throttle */
-		if (_manual.throttle < 0.1f) {
+		if (_manual.thrust < 0.1f) {
 			throttle_max = 0.0f;
 			/* switch to pure pitch based altitude control, give up speed */
 			ECL_tecs_set_speed_weight(0.0f);
@@ -600,7 +602,7 @@ int control_position(Vector *current_position, Vector *ground_speed)
 		climb_out = 0 /* false */;
 
 		/* user wants to climb out */
-		if (_manual.pitch > 0.3f && _manual.throttle > 0.8f) {
+		if (_manual.pitch > 0.3f && _manual.thrust > 0.8f) {
 			climb_out = 1 /* true */;
 		}
 
@@ -631,7 +633,7 @@ int control_position(Vector *current_position, Vector *ground_speed)
 void* fw_position_control_thread_main (void* args)
 {
 	/* welcome user */
-	fprintf (stdout, "Position controller started\n");
+	fprintf (stdout, "Fixedwing position controller started\n");
 	fflush(stdout);
 
 	Vector2f ground_speed;
@@ -659,7 +661,7 @@ void* fw_position_control_thread_main (void* args)
 
 
 	/* abort on a nonzero return value from the parameter init */
-	if (fw_position_control_param_init() != 0) {
+	if (fw_position_control_params_init() != 0) {
 		/* parameter setup went wrong, abort */
 		fprintf (stderr, "Position controller aborting on startup due to an error\n");
 		exit(-1);
@@ -707,7 +709,7 @@ void* fw_position_control_thread_main (void* args)
 		exit(-1);
 	}
 
-	_airspeed_sub = orb_subscribe(ORB_ID(sensor_airspeed));
+	_airspeed_sub = orb_subscribe(ORB_ID(airspeed));
 	if (_airspeed_sub < 0)
 	{
 		fprintf (stderr, "Position controller thread failed to subscribe to airspeed topic\n");
@@ -736,12 +738,14 @@ void* fw_position_control_thread_main (void* args)
 		fprintf (stderr, "Position controller thread failed to advertise vehicle_attitude_setpoint topic\n");
 		exit(-1);
 	}
+	orb_publish(ORB_ID(vehicle_attitude_setpoint), _attitude_sp_adv, &_att_sp);
 
 	_nav_capabilities_adv = orb_advertise(ORB_ID(navigation_capabilities));
 	if (_nav_capabilities_adv < 0) {
 		fprintf (stderr, "Position controller thread failed to advertise navigation_capabilities topic\n");
 		exit(-1);
 	}
+	orb_publish(ORB_ID(navigation_capabilities), _nav_capabilities_adv, &_nav_capabilities);
 
 
 	/* rate limit vehicle status updates to 5Hz */
@@ -761,7 +765,7 @@ void* fw_position_control_thread_main (void* args)
 			orb_copy(ORB_ID(parameter_update), _params_sub, &p_update);
 
 			/* update parameters from storage */
-			fw_position_control_parameters_update();
+			fw_position_control_params_update();
 		}
 
 		/* wait for up to 200ms for data */
@@ -807,6 +811,8 @@ void* fw_position_control_thread_main (void* args)
 		 * publish setpoint.
 		 */
 		if (control_position(&current_position, &ground_speed)) {
+			_att_sp.timestamp = get_absolute_time();
+
 			/* publish the attitude setpoint */
 			orb_publish(ORB_ID(vehicle_attitude_setpoint), _attitude_sp_adv, &_att_sp);
 
@@ -829,7 +835,7 @@ void* fw_position_control_thread_main (void* args)
 	orb_unsubscribe(ORB_ID(vehicle_global_position), _global_pos_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_global_position_set_triplet), _global_set_triplet_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_attitude), _att_sub, pthread_self());
-	orb_unsubscribe(ORB_ID(sensor_airspeed), _airspeed_sub, pthread_self());
+	orb_unsubscribe(ORB_ID(airspeed), _airspeed_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_control_flags), _control_flags_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(parameter_update), _params_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(manual_control_setpoint), _manual_control_sub, pthread_self());

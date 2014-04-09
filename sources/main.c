@@ -23,12 +23,19 @@
 #include "mission/mission.h"
 #include "ORB/ORB.h"
 #include "test_thread.h"
+#include "uav_type.h"
 
 
 //#define START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
 
 char *mission_file_name = NULL;
+char *aircraft_model_name = NULL;
+char *aircraft_model_option = NULL;
+bool_t is_rotary_wing = 1 /* true */;
+rotor_geometry r_geometry = 0;
+
 int _shutdown_all_systems = 0;
+
 
 
 void usage ()
@@ -40,8 +47,6 @@ void usage ()
 	printf ("\t Set the port where to receive flight-data from FlightGear\n");
 	printf ("   -o --output-port\n");
 	printf ("\t Set the port where to send the flight-controls for FlightGear\n");
-	printf ("   -a --address\n");
-	printf ("\t Set the IPv4 address where to send the flight-controls for FlightGear\n");
 	printf ("   -t --tcp\n");
 	printf ("\t Use TCP connection\n");
 	printf ("   -u --udp\n");
@@ -50,6 +55,9 @@ void usage ()
 	printf ("\t Start the GUI (the Xserver must be already running - to start it launch startxwin from cmd)\n");
 	printf ("   -s --simulator\n");
 	printf ("\t Start FlightGear simulator with the correct options\n");
+	printf ("   -a --aircraft\n");
+	printf ("\t Set the aircraft model to be used in FlightGear]\n");
+	printf ("\t Supported models: quadcopter [DEFAULT], rascal\n");
 	printf ("   -m --mission\n");
 	printf ("\t Set the file containing the mission to be executed\n");
 	// printf ("   -d --do-not-send-command\n");
@@ -71,10 +79,10 @@ int check_arguments (int argc, char **argv)
 	static struct option long_options[] = {
 		{"input-port",				required_argument,	0,	'i'},
 		{"output-port",				required_argument,	0,	'o'},
-		{"address",					required_argument,	0,	'a'},
 		{"tcp",						no_argument,		0,	't'},
 		{"udp",						no_argument,		0,	'u'},
 		{"gui",						no_argument,		0,	'g'},
+		{"aircraft",				required_argument,	0,	'a'},
 		{"simulator",				no_argument,		0,	's'},
 		{"mission",					required_argument,	0,	'm'},
 		// {"do-not-send-controls",	no_argument,		0,	'd'},
@@ -97,8 +105,8 @@ int check_arguments (int argc, char **argv)
 				output_port_set = 1;
 				break;
 				
-			case 'a': //set output_address
-				strncpy (output_address, (char*) optarg, 20);
+			case 'a': //set aircraft_model
+				aircraft_model_name = strdup (optarg);
 				break;
 
 			case 't': //set tcp_flag
@@ -172,19 +180,46 @@ int check_arguments (int argc, char **argv)
 	if (output_port < 1023 ||  output_port > 65535 || output_port == input_port)
 		return -1;
 	
-	if (!check_address (output_address))
-		strcpy (output_address, DEFAULT_IP_ADDRESS);
+	strcpy (output_address, DEFAULT_IP_ADDRESS);
 	
-	if (getenv("MISSION_SET"))
+
+	if (!aircraft_model_name)
 	{
-		/*
-		 * this initialize the library and check potential ABI mismatches
-		 * between the version it was compiled for and the actual shared
-		 * library used.
-		 */
-		LIBXML_TEST_VERSION
+		aircraft_model_name = strdup ((char *) DEFAULT_AIRCRAFT_MODEL);
+		r_geometry = QUAD_X;
 	}
-	
+	if (!strcmp (aircraft_model_name, "quadcopter"))
+	{
+		aircraft_model_option = strdup (" --aircraft=quadra");
+	}
+	/*
+	else if (!strcmp (aircraft_model_name, "arducopter"))
+	{
+		aircraft_model_option = strdup (" --aircraft=arducopter");
+		geometry = QUAD_X;
+	}
+	else if (!strcmp (aircraft_model_name, "easystar"))
+	{
+		is_rotary_wing = 0;
+		aircraft_model_option = strdup (" --aircraft=EasyStar");
+	}
+	*/
+	else if (!strcmp (aircraft_model_name, "rascal"))
+	{
+		is_rotary_wing = 0;
+		aircraft_model_option = strdup (" --aircraft=Rascal110-JSBSim");
+	}
+	else if (!strcmp (aircraft_model_name, "Cessna"))
+	{
+		is_rotary_wing = 0;
+		aircraft_model_option = strdup (" --aircraft=c172p-2dpanel");
+	}
+	else
+	{
+		fprintf (stderr, "CRITICAL: Aircraft model %s unsupported\n", aircraft_model_name);
+		return -1;
+	}
+
 	if (getenv("VERBOSE"))
 	{
 		fprintf (stdout, "Input-port (flight-data): %d\n", input_port);
@@ -207,10 +242,13 @@ int check_arguments (int argc, char **argv)
 
 void do_before_exiting ()
 {
-	_shutdown_all_systems = 1;
+	//_shutdown_all_systems = 1;
 
 	// Clean up
 	mission_destroy ();
+
+	fflush (stderr);
+	fflush (stdout);
 
 	sleep (0.2);
 	fprintf (stdout, "Done.\n");
@@ -233,8 +271,16 @@ int main (int n_args, char** args)
 	sleep(1);
 	
 	// ************************************* system init ****************************************
-	if (getenv("START_GUI"))
+	//if (getenv("START_GUI"))
 		gdk_threads_init ();
+
+	/*
+	 * this initialize the library and check potential ABI mismatches
+	 * between the version it was compiled for and the actual shared
+	 * library used.
+	 */
+	//if (getenv("MISSION_SET"))
+		LIBXML_TEST_VERSION
 	
 	system_time_init ();
 	system_orb_init ();
@@ -258,6 +304,7 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 
+
 	// start primary comunicator loop
 	// it must be before start simulator for tcp connections
 	if (pthread_create (&comunicator_thread_id, NULL, comunicator_loop, NULL) != 0)
@@ -267,14 +314,22 @@ int main (int n_args, char** args)
 	}
 
 	// start simulator
-	if (getenv("START_SIMULATOR") && pthread_create (&simulator_thread_id, NULL, FlightGear_launcher, NULL) != 0)
+	if (getenv("START_SIMULATOR") && pthread_create (&simulator_thread_id, NULL, FlightGear_launcher, aircraft_model_option) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to launch FlightGear (errno: %d)\n", errno);
 		exit(-1);
 	}
+	else if (!getenv("START_SIMULATOR"))
+	{
+		// export notification of hil off
+		fprintf (stderr, "trying to define a param\n");
+		param_define_int("HIL_ENABLED", 0);
+		fprintf (stderr, "param defined \n");
+	}
 
 	if (getenv("START_SIMULATOR"))
 		sleep (5);
+
 
 	// start GUI
 	if (getenv("START_GUI") &&  pthread_create (&GUI_thread_id, NULL, start_GUI, NULL) != 0)
@@ -305,6 +360,8 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 	
+	sleep(3);
+
 	// start test thread
 	if (START_TEST_THREAD && pthread_create (&test_thread_id, NULL, test_thread_body, NULL) != 0)
 	{
@@ -319,6 +376,9 @@ int main (int n_args, char** args)
 	if (getenv("START_SIMULATOR"))
 	{
 		pthread_join(simulator_thread_id, (void**)&(thread_return_values[0]));
+		if (*(thread_return_values[0]) != 0)
+			fprintf (stderr, "\n\nCRITICAL: FlightGear simulator crushed\n");
+
 		_shutdown_all_systems = 1;
 	}
 

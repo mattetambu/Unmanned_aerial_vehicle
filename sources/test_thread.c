@@ -18,6 +18,8 @@
 #include "ORB/topics/vehicle_attitude.h"
 #include "ORB/topics/vehicle_hil_attitude.h"
 #include "ORB/topics/position/vehicle_global_position.h"
+#include "ORB/topics/position/vehicle_hil_global_position.h"
+#include "ORB/topics/position/vehicle_local_position.h"
 #include "ORB/topics/actuator/actuator_armed.h"
 #include "ORB/topics/parameter_update.h"
 
@@ -35,6 +37,96 @@ pthread_t test_thread_id, test_thread_id2;
 
 
 void* test_thread_body (void* args)
+{
+	int vgp_updated, vlp_updated, vhgp_updated;
+	absolute_time vgp_timestamp, vlp_timestamp, vhgp_timestamp;
+	static unsigned int TEST_THREAD_MONITORING_INTERVAL = 2;	// s
+
+
+	/* ********************** Subscribe to the topics ****************************** */
+	/* Subscribe to vehicle_global_position topic */
+	int vehicle_global_position_sub = orb_subscribe(ORB_ID(vehicle_global_position));
+	struct vehicle_global_position_s vehicle_global_position;
+	memset ((void *) &vehicle_global_position, 0, sizeof(vehicle_global_position));
+	if (vehicle_global_position_sub < 0)
+	{
+		fprintf (stderr, "Test thread failed to subscribe to vehicle_global_position topic\n");
+		return 0;
+	}
+
+	/* Subscribe to vehicle_global_position topic */
+	int vehicle_hil_global_position_sub = orb_subscribe(ORB_ID(vehicle_hil_global_position));
+	struct vehicle_hil_global_position_s vehicle_hil_global_position;
+	memset ((void *) &vehicle_hil_global_position, 0, sizeof(vehicle_hil_global_position));
+	if (vehicle_hil_global_position_sub < 0)
+	{
+		fprintf (stderr, "Test thread failed to subscribe to vehicle_hil_global_position topic\n");
+		return 0;
+	}
+
+	/* Subscribe to vehicle_local_position topic */
+	int vehicle_local_position_sub = orb_subscribe(ORB_ID(vehicle_local_position));
+	struct vehicle_local_position_s vehicle_local_position;
+	memset ((void *) &vehicle_local_position, 0, sizeof(vehicle_local_position));
+	if (vehicle_local_position_sub < 0)
+	{
+		fprintf (stderr, "Test thread failed to subscribe to vehicle_local_position topic\n");
+		return 0;
+	}
+
+	while (!_shutdown_all_systems)
+	{
+		vgp_updated = orb_poll(ORB_ID(vehicle_global_position), vehicle_global_position_sub, 10000000);
+		if (vgp_updated) {
+			orb_copy(ORB_ID(vehicle_global_position), vehicle_global_position_sub, &vehicle_global_position);
+			orb_stat (ORB_ID(vehicle_global_position), vehicle_global_position_sub, &vgp_timestamp);
+		}
+
+		vlp_updated = orb_poll(ORB_ID(vehicle_local_position), vehicle_local_position_sub, 10000000);
+		if (vlp_updated) {
+			orb_copy(ORB_ID(vehicle_local_position), vehicle_local_position_sub, &vehicle_local_position);
+			orb_stat (ORB_ID(vehicle_local_position), vehicle_local_position_sub, &vlp_timestamp);
+		}
+
+		vhgp_updated = orb_poll(ORB_ID(vehicle_hil_global_position), vehicle_hil_global_position_sub, 10000000);
+		if (vhgp_updated) {
+			orb_copy(ORB_ID(vehicle_hil_global_position), vehicle_hil_global_position_sub, &vehicle_hil_global_position);
+			orb_stat (ORB_ID(vehicle_hil_global_position), vehicle_hil_global_position_sub, &vhgp_timestamp);
+		}
+
+		/* do not plot until the user has finish to control the console */
+		get_console_unique_control ();
+
+		if (_shutdown_all_systems)
+			break;
+
+		fprintf (stdout, "\n");
+		fflush (stdout);
+
+		//fprintf (stderr, "local.xy_valid:%d\t\t\t\tlocal.z_valid:%d\t\t\t\tlocal.xy_global:%d\t\tlocal.z_global:%d\n", vehicle_local_position.xy_valid, vehicle_local_position.z_valid, vehicle_local_position.xy_global, vehicle_local_position.z_global);
+		fprintf (stderr, "hil_global.latitude:%.7f\t\t\tglobal.latitude:%.7f\t\tlocal.latitude:%.7f\n", (float) vehicle_hil_global_position.latitude / 1e7, (float) vehicle_global_position.latitude / 1e7, vehicle_local_position.z);
+		fprintf (stderr, "hil_global.longitude:%.7f\t\tglobal.longitude:%.7f\t\tlocal.longitude:%.7f\n", (float) vehicle_hil_global_position.longitude / 1e7, (float) vehicle_global_position.longitude / 1e7, vehicle_local_position.y);
+		fprintf (stderr, "hil_global.altitude:%.3f\t\t\tglobal.altitude:%.3f\t\t\tlocal.altitude:%.3f\n", vehicle_hil_global_position.altitude, vehicle_global_position.altitude, -vehicle_local_position.z);
+		fprintf (stderr, "hil_global.ground_level:%.3f\t\t\tglobal.ground_level:%.3f\t\tlocal.ground_level:%.3f\n", vehicle_hil_global_position.ground_level, vehicle_global_position.ground_level, vehicle_local_position.ref_alt);
+		fprintf (stderr, "hil_global.yaw:%.3f\t\t\t\tglobal.yaw:%.3f\t\t\tlocal.yaw:%.3f\n", vehicle_hil_global_position.yaw, vehicle_global_position.yaw, vehicle_local_position.yaw);
+
+
+		/* allow the user to control the console */
+		release_console_control ();
+
+		sleep(TEST_THREAD_MONITORING_INTERVAL);
+	}
+
+	/* **************************************** unsubscribe ****************************************** */
+	orb_unsubscribe (ORB_ID(vehicle_global_position), vehicle_global_position_sub, pthread_self());
+	orb_unsubscribe (ORB_ID(vehicle_hil_global_position), vehicle_hil_global_position_sub, pthread_self());
+	orb_unsubscribe (ORB_ID(vehicle_local_position), vehicle_local_position_sub, pthread_self());
+
+	return 0;
+}
+
+
+void* test_thread_body1 (void* args)
 {
 	int updated;
 	static unsigned int TEST_THREAD_MONITORING_INTERVAL = 10;	// s
@@ -117,11 +209,9 @@ void* test_thread_body (void* args)
 	if (param_changed_sub < 0)
 	{
 		fprintf (stderr, "Test thread failed to subscribe to parameter_update topic\n");
-		exit(-1);
+		return 0;
 	}
 
-	fprintf (stdout, "\n\n");
-	fflush (stdout);
 
 	while (!_shutdown_all_systems)
 	{
@@ -130,6 +220,9 @@ void* test_thread_body (void* args)
 
 		if (_shutdown_all_systems)
 			break;
+
+		fprintf (stdout, "\n");
+		fflush (stdout);
 
 		/* update safety */
 		updated = orb_check(ORB_ID(safety), safety_sub);
@@ -261,13 +354,8 @@ void* test_thread_body2 (void* args)
 		return 0;
 	}
 
-	fprintf (stdout, "\n\n");
-	fflush (stdout);
-
 	while (!_shutdown_all_systems)
 	{
-		if (_shutdown_all_systems)
-			break;
 
 		va_updated = orb_poll(ORB_ID(vehicle_attitude), vehicle_attitude_sub, 10000000);
 		if (va_updated) {
@@ -283,6 +371,12 @@ void* test_thread_body2 (void* args)
 
 		/* do not plot until the user has finish to control the console */
 		get_console_unique_control ();
+
+		if (_shutdown_all_systems)
+			break;
+
+		fprintf (stdout, "\n");
+		fflush (stdout);
 
 		fprintf (stdout, "Hil attitude publish timestamp:\t%ld\n", (long int) va_timestamp);
 		fprintf (stdout, "Estimator attitude publish timestamp:\t%ld\n", (long int) vha_timestamp);

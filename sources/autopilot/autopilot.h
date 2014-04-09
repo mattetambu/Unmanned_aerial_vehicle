@@ -1,4 +1,4 @@
-// autopilot.h
+// @file autopilot.h
 
 #ifndef	_AUTOPILOT_H_
 #define	_AUTOPILOT_H_

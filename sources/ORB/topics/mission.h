@@ -9,7 +9,8 @@
 	#include <stdint.h>
 	#include "../ORB.h"
 	
-	//#define ACCEPT_CONTROL_TAGS
+	#define ACCEPT_CONTROL_TAGS
+	#define ACCEPT_ONLY_REPEAT_CONTROL_TAG	// WARNING: in order to enable all the control tags you must updated the find_next_setpoint_index and maybe others in mission_waypoint_manager.c
 
 
 	/**
@@ -202,21 +203,27 @@
 	{
 		// commands
 		accepted_command_waypoint = 0,
-		accepted_command_loiter,
+		accepted_command_loiter_time,
+		accepted_command_loiter_circle,
+		accepted_command_loiter_unlim,
 		accepted_command_rtl,
 		accepted_command_takeoff,
 		accepted_command_land,
 #ifdef ACCEPT_CONTROL_TAGS
 		// controls
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 		accepted_command_delay,
 		accepted_command_jump,
 		accepted_command_set,
+#endif
 		accepted_command_repeat,
 		accepted_command_end_repeat,
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 		accepted_command_while,
 		accepted_command_end_while,
 		accepted_command_if,
 		accepted_command_end_if,
+#endif
 #endif
 		// utils
 		accepted_command_N_COMMANDS
@@ -228,21 +235,27 @@
         {
 			// commands
 			return_custom_enum_string (accepted_command_waypoint, "waypoint");
-			return_custom_enum_string (accepted_command_loiter, "loiter");
+			return_custom_enum_string (accepted_command_loiter_time, "loiter_time");
+			return_custom_enum_string (accepted_command_loiter_circle, "loiter_circle");
+			return_custom_enum_string (accepted_command_loiter_unlim, "loiter_unlim");
 			return_custom_enum_string (accepted_command_rtl, "rtl");
 			return_custom_enum_string (accepted_command_takeoff, "takeoff");
 			return_custom_enum_string (accepted_command_land, "land");
 #ifdef ACCEPT_CONTROL_TAGS
 			// controls
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 			return_custom_enum_string (accepted_command_delay, "delay");
 			return_custom_enum_string (accepted_command_jump, "jump");
 			return_custom_enum_string (accepted_command_set, "set");
+#endif
 			return_custom_enum_string (accepted_command_repeat, "repeat");
 			return_custom_enum_string (accepted_command_end_repeat, "end_repeat");
+#ifndef ACCEPT_ONLY_REPEAT_CONTROL_TAG
 			return_custom_enum_string (accepted_command_while, "while");
 			return_custom_enum_string (accepted_command_end_while, "end_while");
 			return_custom_enum_string (accepted_command_if, "if");
 			return_custom_enum_string (accepted_command_end_if, "end_if");
+#endif
 #endif
 			default: return NULL;
         }
@@ -265,11 +278,13 @@
 		accepted_command_t name;
 		uint8_t id;
 		uint8_t depth;
+		uint8_t current; // 0, 1
 
 		float option1;
 		double option2;
 		double option3;
 		double option4;
+		double option5;
 	} mission_command_t;
 	
 	struct mission_s
@@ -277,15 +292,15 @@
 		mission_mode_t mode;				// What to do if the mission is interrupted and then resumed 
 		mission_lastly_cmd_t lastly;		// What to do after the last command of the mission was completed
 
-		mission_command_t command_list[MAX_COMMAND_IN_MISSION_LIST];	// Mission commands
+		mission_command_t command_list[MAX_COMMAND_IN_MISSION_LIST+1];	// Mission commands
 		mission_command_index_t to_execute;	// Current command to execute
 		mission_command_index_t n_commands;	// Number of commands
 	};
 	
 	struct mission_small_s
 	{
-		mission_mode_t mode;				// What to do if the mission is interrupted and then resumed
-		mission_lastly_cmd_t lastly;		// What to do after the last command of the mission was completed
+		//mission_mode_t mode;				// What to do if the mission is interrupted and then resumed
+		//mission_lastly_cmd_t lastly;		// What to do after the last command of the mission was completed
 
 		mission_command_t current_command;		// Mission active command
 		mission_command_index_t command_index;	// Mission active command index
@@ -293,6 +308,7 @@
 
 
 	typedef struct mission_s mission_t;
+	typedef struct mission_small_s mission_small_t;
 	
 	/**
 	 * @}

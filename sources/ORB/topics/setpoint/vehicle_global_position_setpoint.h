@@ -20,7 +20,9 @@
 	{
 		// commands
 		navigation_command_waypoint = 0,
-		navigation_command_loiter,
+		navigation_command_loiter_time,
+		navigation_command_loiter_circle,
+		navigation_command_loiter_unlim,
 		navigation_command_rtl,
 		navigation_command_takeoff,
 		navigation_command_land
