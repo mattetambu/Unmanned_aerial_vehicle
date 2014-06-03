@@ -16,6 +16,7 @@
 	
 	#define GTK_MULTITHREAD
 	#define MAX_TEXT_ROW_LENGTH				150
+	#define N_SPACES_PER_TAB	5
 
 
 	enum

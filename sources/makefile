@@ -5,10 +5,10 @@ CFLAGS = -Wall -O2 -lm -lpthread -g
 CLIBS = `pkg-config --cflags --libs gtk+-2.0 libglade-2.0 gmodule-2.0 gmodule-export-2.0` `xml2-config --cflags --libs` `gtk-config --cflags --libs gthread`
 
 
-ATTITUDE_ESTIMATOR_SOURCES = ./autopilot/attitude_estimator_SO3/*.c
-POSITON_ESTIMATOR_SOURCES = ./autopilot/position_estimator_inav/*.c ./autopilot/position_estimator_mc/*.c ./autopilot/position_estimator_mc/codegen/*.c
-ATTITUDE_CONTROLLER_SOURCES = ./autopilot/fw_attitude_control/*.c ./autopilot/fixedwing_attitude_control/*.c ./autopilot/multirotor_attitude_control/*.c
-POSITION_CONTROLLER_SOURCES = ./autopilot/fw_position_control/*.c ./autopilot/fixedwing_position_control/*.c ./autopilot/multirotor_position_control/*.c
+ATTITUDE_ESTIMATOR_SOURCES = ./autopilot/attitude_estimator_ideal/*.c ./autopilot/attitude_estimator_SO3/*.c
+POSITON_ESTIMATOR_SOURCES =  ./autopilot/position_estimator_ideal/*.c ./autopilot/position_estimator_mc/*.c ./autopilot/position_estimator_mc/codegen/*.c
+ATTITUDE_CONTROLLER_SOURCES = ./autopilot/fw_attitude_control/*.c ./autopilot/fixedwing_attitude_control/*.c ./autopilot/multirotor_attitude_control/*.c ./autopilot/mr_attitude_control/*.c
+POSITION_CONTROLLER_SOURCES = ./autopilot/fw_position_control/*.c ./autopilot/fixedwing_position_control/*.c ./autopilot/multirotor_position_control/*.c ./autopilot/mr_position_control/*.c
 COMMANDER_SOURCES = ./autopilot/commander/*.c
 MIXER_SOURCES = ./autopilot/mixer/*.c
 AUTOPILOT_SOURCES = ./autopilot/*.c $(ATTITUDE_ESTIMATOR_SOURCES) $(POSITON_ESTIMATOR_SOURCES) $(ATTITUDE_CONTROLLER_SOURCES) $(POSITION_CONTROLLER_SOURCES) $(COMMANDER_SOURCES) $(MIXER_SOURCES)
@@ -28,19 +28,19 @@ TIME_SOURCES = ./uav_library/time/*.c
 LIBRARY_SOURCES = $(CONSOLE_CONTROLLER_SOURCES) $(DISPLAY_SOURCES) $(GEO_SOURCES) $(IO_CTRL_SOURCES) $(MATH_SOURCES) $(PARAM_SOURCES) $(PID_SOURCES) $(TIME_SOURCES)
 
 SOURCES = ./*.c $(AUTOPILOT_SOURCES) $(MISSION_SOURCES) $(ORB_SOURCES) $(SIMULATOR_SOURCES) $(LIBRARY_SOURCES)
-executable_name = UAV_autopilot
+EXECUTABLE_NAME = UAV_autopilot
 
 
 all:
 	@echo " "
 	@echo "UAV Autopilot"
-	@make -s compile
+	@make -s $(EXECUTABLE_NAME)
 	@echo " "
 
-compile: $(SOURCES)
+$(EXECUTABLE_NAME): $(SOURCES)
 	@echo "Compiling sources"
 	@echo " "
-	$(CC) $(CFLAGS) $(SOURCES) -o $(executable_name) $(CLIBS)
+	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(CLIBS)
 	@echo "   Compiling process complete."
 	@echo " "
 

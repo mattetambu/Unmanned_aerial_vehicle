@@ -24,7 +24,8 @@
 	 */
 	struct vehicle_global_position_set_triplet_s
 	{
-		bool_t previous_valid;					/**< flag indicating previous position is valid */
+		bool_t previous_valid;				/**< flag indicating previous position is valid */
+		bool_t current_valid;				/**< flag indicating current position is valid */
 		bool_t next_valid;					/**< flag indicating next position is valid */
 
 		struct vehicle_global_position_setpoint_s previous;

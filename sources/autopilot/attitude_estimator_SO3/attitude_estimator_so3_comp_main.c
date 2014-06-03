@@ -27,11 +27,11 @@
 
 #include "../../ORB/ORB.h"
 #include "../../ORB/topics/sensors/sensor_combined.h"
-#include "../../ORB/topics/vehicle_control_flags.h"
 #include "../../ORB/topics/vehicle_attitude.h"
 #include "../../ORB/topics/parameter_update.h"
 
 #include "../../uav_library/time/drv_time.h"
+#include "../../uav_library/geo/geo.h"
 #include "../../uav_library/math/limits.h"
 #include "../../uav_library/math/EulerAngles.h"
 #include "../../uav_library/math/Quaternion.h"
@@ -150,27 +150,27 @@ void non_linear_SO3_AHRS_update(float gx, float gy, float gz, float ax, float ay
 	
 		// Normalise magnetometer measurement
 		// Will sqrt work better? PX4 system is powerful enough?
-    		recipNorm = invSqrt(mx * mx + my * my + mz * mz);
-    		mx *= recipNorm;
-    		my *= recipNorm;
-    		mz *= recipNorm;
-    
-    		// Reference direction of Earth's magnetic field
-    		hx = 2.0f * (mx * (0.5f - q2q2 - q3q3) + my * (q1q2 - q0q3) + mz * (q1q3 + q0q2));
-    		hy = 2.0f * (mx * (q1q2 + q0q3) + my * (0.5f - q1q1 - q3q3) + mz * (q2q3 - q0q1));
+		recipNorm = invSqrt(mx * mx + my * my + mz * mz);
+		mx *= recipNorm;
+		my *= recipNorm;
+		mz *= recipNorm;
+
+		// Reference direction of Earth's magnetic field
+		hx = 2.0f * (mx * (0.5f - q2q2 - q3q3) + my * (q1q2 - q0q3) + mz * (q1q3 + q0q2));
+		hy = 2.0f * (mx * (q1q2 + q0q3) + my * (0.5f - q1q1 - q3q3) + mz * (q2q3 - q0q1));
 		hz = 2 * mx * (q1q3 - q0q2) + 2 * my * (q2q3 + q0q1) + 2 * mz * (0.5 - q1q1 - q2q2);
-    		bx = sqrt(hx * hx + hy * hy);
-    		bz = hz;
-    
-    		// Estimated direction of magnetic field
-    		halfwx = bx * (0.5f - q2q2 - q3q3) + bz * (q1q3 - q0q2);
-    		halfwy = bx * (q1q2 - q0q3) + bz * (q0q1 + q2q3);
-    		halfwz = bx * (q0q2 + q1q3) + bz * (0.5f - q1q1 - q2q2);
-    
-    		// Error is sum of cross product between estimated direction and measured direction of field vectors
-    		halfex += (my * halfwz - mz * halfwy);
-    		halfey += (mz * halfwx - mx * halfwz);
-    		halfez += (mx * halfwy - my * halfwx);
+		bx = sqrt(hx * hx + hy * hy);
+		bz = hz;
+
+		// Estimated direction of magnetic field
+		halfwx = bx * (0.5f - q2q2 - q3q3) + bz * (q1q3 - q0q2);
+		halfwy = bx * (q1q2 - q0q3) + bz * (q0q1 + q2q3);
+		halfwz = bx * (q0q2 + q1q3) + bz * (0.5f - q1q1 - q2q2);
+
+		// Error is sum of cross product between estimated direction and measured direction of field vectors
+		halfex += (my * halfwz - mz * halfwy);
+		halfey += (mz * halfwx - mx * halfwz);
+		halfez += (mx * halfwy - my * halfwx);
 	}
 
 	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
@@ -300,11 +300,9 @@ void* attitude_estimator_so3_comp_thread_main (void* args)
 	struct parameter_update_s update;
 	struct sensor_combined_s raw;
 	struct vehicle_attitude_s att;
-	struct vehicle_control_flags_s control_flags;
 	memset(&update, 0, sizeof(update));
 	memset(&raw, 0, sizeof(raw));
 	memset(&att, 0, sizeof(att));
-	memset(&control_flags, 0, sizeof(control_flags));
 
 
 	/* subscribe to raw data */
@@ -496,7 +494,7 @@ void* attitude_estimator_so3_comp_thread_main (void* args)
 			// XXX Apply the same transformation to the rotation matrix
 			att.roll = euler0 - so3_comp_params.roll_off;
 			att.pitch = euler1 - so3_comp_params.pitch_off;
-			att.yaw = euler2 - so3_comp_params.yaw_off;
+			att.yaw = _wrap_pi(euler2 - so3_comp_params.yaw_off);
 
 
 			//! Euler angle rate. But it needs to be investigated again.

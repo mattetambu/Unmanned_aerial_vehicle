@@ -851,7 +851,7 @@
                               <widget class="GtkLabel" id="Aileron_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Aileron  [-1,1]</property>
+                                <property name="label" translatable="yes">Roll_ctrl [-1,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -880,7 +880,7 @@
                               <widget class="GtkLabel" id="Elevator_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Elevator  [-1,1]</property>
+                                <property name="label" translatable="yes">Pitch_ctrl [-1,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -910,7 +910,7 @@
                               <widget class="GtkLabel" id="Rudder_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Rudder  [-1,1]</property>
+                                <property name="label" translatable="yes">Yaw_ctrl [-1,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -939,7 +939,7 @@
                               <widget class="GtkLabel" id="Throttle_label">
                                 <property name="width_request">1</property>
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Throttle  [0,1]</property>
+                                <property name="label" translatable="yes">Thrust_ctrl [0,1]</property>
                                 <property name="ellipsize">middle</property>
                               </widget>
                               <packing>
@@ -1341,8 +1341,6 @@
                         <property name="tearoff_title">Manual</property>
                         <property name="items" translatable="yes">Manual
 Stabilize
-Fly_by_wire
-Easy
 Loiter
 RTL (Return to launch WP)
 Mission</property>

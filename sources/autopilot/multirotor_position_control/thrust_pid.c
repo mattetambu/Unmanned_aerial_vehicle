@@ -6,8 +6,10 @@
  */
 
 #include "thrust_pid.h"
-#include <math.h>
 #include "../../uav_library/math/limits.h"
+
+#include <math.h>
+#include <stdio.h>
 
 
 void thrust_pid_init(thrust_pid_t *pid, float kp, float ki, float kd, float limit_min, float limit_max, uint8_t mode, float dt_min)
@@ -85,11 +87,11 @@ float thrust_pid_calculate(thrust_pid_t *pid, float sp, float val, float dt, flo
 		return pid->last_output;
 	}
 
-	float i, d;
+	float i, d, output, att_comp, error;
 	pid->sp = sp;
 
 	// Calculated current error value
-	float error = pid->sp - val;
+	error = pid->sp - val;
 
 	// Calculate or measured current error derivative
 	if (pid->mode == THRUST_PID_MODE_DERIVATIV_CALC) {
@@ -113,8 +115,6 @@ float thrust_pid_calculate(thrust_pid_t *pid, float sp, float val, float dt, flo
 
 	/* attitude-thrust compensation
 	 * r22 is (2, 2) componet of rotation matrix for current attitude */
-	float att_comp;
-
 	if (r22 > 0.8f)
 		att_comp = 1.0f / r22;
 	else if (r22 > 0.0f)
@@ -123,7 +123,9 @@ float thrust_pid_calculate(thrust_pid_t *pid, float sp, float val, float dt, flo
 		att_comp = 1.0f;
 
 	/* calculate output */
-	float output = ((error * pid->kp) + i + (d * pid->kd)) * att_comp;
+	output = ((error * pid->kp) + i + (d * pid->kd)) * att_comp;
+
+	//fprintf (stderr, "output:%.3f\terror:%.3f\tpid_kp:%.3f\tpid_ki:%.3f\tpid_kd:%.3f\tvz_sp:%.3f\tcurr_vz:%.3f\tatt_comp:%.3f\n", output, error, pid->kp, i, pid->kd, sp, val, att_comp);
 
 	/* check for saturation */
 	if (output < pid->limit_min || output > pid->limit_max) {

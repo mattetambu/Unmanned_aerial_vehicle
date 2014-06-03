@@ -10,7 +10,6 @@
 
 	#include <stdint.h>
 
-
 	/* PID_MODE_DERIVATIV_CALC calculates discrete derivative from previous error */
 	#define THRUST_PID_MODE_DERIVATIV_CALC	0
 	/* PID_MODE_DERIVATIV_CALC_NO_SP calculates discrete derivative from previous value, setpoint derivative is ignored */

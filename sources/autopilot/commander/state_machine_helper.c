@@ -44,8 +44,7 @@ check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicl
 				// else fallback to fly_by_wire
 				fprintf (stderr, "Can't switch to easy flight mode\n");
 			}
-
-			if (sp_man->second_switch == secondary_switch_fly_by_wire) {
+			else if (sp_man->second_switch == secondary_switch_fly_by_wire) {
 				res = main_state_transition(current_status, main_state_support, sub_flight_mode_fly_by_wire);
 				if (res != TRANSITION_DENIED)
 					break;	// changed successfully or already in this state
@@ -53,8 +52,7 @@ check_main_state_machine(struct manual_control_setpoint_s *sp_man, struct vehicl
 				// else fallback to stabilize
 				fprintf (stderr, "Can't switch to fly_by_wire flight mode\n");
 			}
-
-			if (sp_man->second_switch == secondary_switch_stabilize || res == TRANSITION_DENIED) {
+			else if (sp_man->second_switch == secondary_switch_stabilize || res == TRANSITION_DENIED) {
 				res = main_state_transition(current_status, main_state_support, sub_flight_mode_stabilize);
 				if (res != TRANSITION_DENIED)
 					break;	// changed successfully or already in this state
@@ -401,7 +399,7 @@ main_state_transition(struct vehicle_status_s *current_state, main_flight_mode_t
 	transition_result_t ret = TRANSITION_DENIED;
 
 	/* only check transition if the new state is actually different from the current one */
-	if (new_main_state == current_state->main_flight_mode) {
+	if (new_main_state == current_state->main_flight_mode && new_sub_flight_mode == current_state->sub_flight_mode) {
 		ret = TRANSITION_NOT_CHANGED;
 
 	} else {
@@ -449,6 +447,7 @@ main_state_transition(struct vehicle_status_s *current_state, main_flight_mode_t
 		if (ret == TRANSITION_CHANGED) {
 			current_state->main_flight_mode = new_main_state;
 			current_state->sub_flight_mode = new_sub_flight_mode;
+
 			main_state_changed = 1 /* true */;
 		}
 	}

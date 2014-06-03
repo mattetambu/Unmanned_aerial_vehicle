@@ -23,6 +23,7 @@
 #include "../ORB/topics/mission.h"
 #include "../ORB/topics/parameter_update.h"
 #include "../ORB/topics/navigation_capabilities.h"
+#include "../ORB/topics/vehicle_control_flags.h"
 #include "../ORB/topics/position/vehicle_global_position.h"
 #include "../ORB/topics/position/home_position.h"
 #include "../ORB/topics/setpoint/vehicle_global_position_setpoint.h"
@@ -44,6 +45,9 @@ void find_next_setpoint_index (int curr_index, int *ret_index, bool_t *ret_valid
  */
 static orb_advert_t global_position_setpoint_pub = -1;
 static orb_advert_t global_position_set_triplet_pub = -1;
+
+struct vehicle_global_position_setpoint_s g_sp;	/* global, absolute waypoint */
+struct vehicle_global_position_set_triplet_s triplet;	/* fill triplet: previous, current, next waypoint */
 
 /*
  * Waypoint manager
@@ -110,7 +114,7 @@ int wp_manager_init (orb_subscr_t mission_sub, orb_subscr_t home_sub)
 		return -1;
 	}
 
-	if (orb_wait (ORB_ID(home_position), mission_sub) > 0)
+	if (orb_wait (ORB_ID(home_position), home_sub) > 0)
 		orb_copy (ORB_ID(home_position), home_sub, (void *) &home_position);
 	else
 	{
@@ -322,42 +326,36 @@ void missionlib_current_waypoint_changed ()
 {
 	float yaw_sp;
 
-	/* global, absolute waypoint */
-	struct vehicle_global_position_setpoint_s g_sp;
-
-	/* fill triplet: previous, current, next waypoint */
-	struct vehicle_global_position_set_triplet_s triplet;
-
-	yaw_sp = get_yaw_to_next_waypoint (wp_manager.current_setpoint_index, wp_manager.next_setpoint_index);
-
-	set_vehicle_global_position_setpoint (wp_manager.current_setpoint_index, yaw_sp, &g_sp);
-	orb_publish(ORB_ID(vehicle_global_position_setpoint), global_position_setpoint_pub, &g_sp);
-
-	/* current waypoint is same as g_sp */
-	memcpy(&(triplet.current), &g_sp, sizeof(g_sp));
-
 	/* populate last and next */
 	triplet.previous_valid = wp_manager.last_setpoint_valid;
+	triplet.current_valid = wp_manager.current_setpoint_valid;
 	triplet.next_valid = wp_manager.next_setpoint_valid;
 
-
-	if (wp_manager.last_setpoint_valid) {
+	if (triplet.previous_valid) {
 		yaw_sp = get_yaw_to_next_waypoint (wp_manager.last_setpoint_index, wp_manager.current_setpoint_index);
 
 		set_vehicle_global_position_setpoint (wp_manager.last_setpoint_index, yaw_sp, &g_sp);
 		memcpy(&(triplet.previous), &g_sp, sizeof(g_sp));
 	}
 
-	if (wp_manager.next_setpoint_valid) {
+	if (triplet.next_valid) {
 		yaw_sp = 0; // no need to calculate this for now
 
 		set_vehicle_global_position_setpoint (wp_manager.next_setpoint_index, yaw_sp, &g_sp);
 		memcpy(&(triplet.next), &g_sp, sizeof(g_sp));
 	}
 
+	if (triplet.current_valid) {
+		yaw_sp = get_yaw_to_next_waypoint (wp_manager.current_setpoint_index, wp_manager.next_setpoint_index);
+
+		set_vehicle_global_position_setpoint (wp_manager.current_setpoint_index, yaw_sp, &g_sp);
+		memcpy(&(triplet.current), &g_sp, sizeof(g_sp));
+	}
+
 	if (MISSION_WPM_TEXT_FEEDBACK)
 		printf("INFO: Set new waypoint (%u)\n", wp_manager.current_setpoint_index);
 
+	orb_publish(ORB_ID(vehicle_global_position_setpoint), global_position_setpoint_pub, &g_sp);
 	orb_publish(ORB_ID(vehicle_global_position_set_triplet), global_position_set_triplet_pub, &triplet);
 }
 
@@ -507,6 +505,14 @@ void *mission_waypoint_manager_thread_main(void* args)
 		exit (-1);
 	}
 
+	struct vehicle_control_flags_s control_flags;
+	orb_subscr_t control_flags_sub = orb_subscribe(ORB_ID(vehicle_control_flags));
+	if (control_flags_sub < 0)
+	{
+		fprintf (stderr, "Waypoint manager thread failed to subscribe to vehicle_control_flags topic\n");
+		exit(-1);
+	}
+
 	struct navigation_capabilities_s nav_cap;
 	orb_subscr_t nav_cap_sub = orb_subscribe (ORB_ID(navigation_capabilities));
 	if (nav_cap_sub == -1)
@@ -536,6 +542,7 @@ void *mission_waypoint_manager_thread_main(void* args)
 		fprintf (stderr, "Waypoint manager thread failed to subscribe the home_position topic\n");
 		exit (-1);
 	}
+
 
 	/* abort on a nonzero return value from the parameter init */
 	if (mission_waypoint_manager_params_init() != 0 || wp_manager_init (mission_sub, home_sub) != 0)
@@ -568,6 +575,10 @@ void *mission_waypoint_manager_thread_main(void* args)
 		else
 			orb_copy (ORB_ID(vehicle_global_position), global_pos_sub, (void *) &global_pos);
 
+		updated = orb_check (ORB_ID(vehicle_control_flags), control_flags_sub);
+		if (updated) {
+			orb_copy(ORB_ID(vehicle_control_flags), control_flags_sub, &control_flags);
+		}
 
 		updated = orb_check (ORB_ID(navigation_capabilities), nav_cap_sub);
 		if (updated)
@@ -585,6 +596,12 @@ void *mission_waypoint_manager_thread_main(void* args)
 			mission_waypoint_manager_params_update();
 		}
 
+		if (!control_flags.flag_control_manual_enabled && control_flags.flag_control_auto_enabled)
+		{
+			orb_publish(ORB_ID(vehicle_global_position_setpoint), global_position_setpoint_pub, &g_sp);
+			orb_publish(ORB_ID(vehicle_global_position_set_triplet), global_position_set_triplet_pub, &triplet);
+		}
+
 		now = get_absolute_time();
 
 		/* check if waypoint has been reached against the last positions */
@@ -600,6 +617,9 @@ void *mission_waypoint_manager_thread_main(void* args)
 	 */
 	if (orb_unsubscribe (ORB_ID(vehicle_global_position), global_pos_sub, pthread_self()) < 0)
 		fprintf (stderr, "Waypoint manager thread failed to unsubscribe to vehicle_global_position topic\n");
+
+	if (orb_unsubscribe(ORB_ID(vehicle_control_flags), control_flags_sub, pthread_self()) < 0)
+		fprintf (stderr, "Waypoint manager thread failed to unsubscribe to vehicle_control_flags topic\n");
 
 	if (orb_unsubscribe (ORB_ID(navigation_capabilities), nav_cap_sub, pthread_self()) < 0)
 		fprintf (stderr, "Waypoint manager thread failed to unsubscribe to navigation_capabilities topic\n");

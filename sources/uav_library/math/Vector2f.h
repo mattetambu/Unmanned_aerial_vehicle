@@ -42,6 +42,8 @@
 	int Vector2f_add_Vector2f (Vector2f *v, Vector2f *right);
 	int Vector2f_sub_Vector2f (Vector2f *v, Vector2f *right);	
 	int Vector2f_mul_Vector2f (Vector2f *v, float *result, Vector2f *right);
+	int Vector2f_emul_Vector2f (Vector3f *v, Vector3f *result, Vector3f *right);
+	int Vector2f_ediv_Vector2f (Vector3f *v, Vector3f *result, Vector3f *right);
 	int Vector2f_cross_Vector2f (Vector2f *v, float *result, Vector2f *right);	
 
 	int Vector2f_change_sign (Vector2f *v);

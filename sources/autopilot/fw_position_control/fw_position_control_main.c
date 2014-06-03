@@ -267,8 +267,8 @@ int control_position(Vector *current_position, Vector *ground_speed)
 	bool_t was_circle_mode, climb_out;
 	Vector2f next_wp, prev_wp, rtl_pos, loiter_hold_pos;
 
-	float prev_wp0, prev_wp1, current_position0, current_position1;
-	float wp_distance;
+	float prev_wp0, prev_wp1, next_wp0, next_wp1, current_position0, current_position1;
+	float wp_distance, bearing_lastwp_currwp;
 	float flare_angle_rad, throttle_land, airspeed_land, airspeed_approach;
 	//float land_pitch_min;
 
@@ -363,31 +363,31 @@ int control_position(Vector *current_position, Vector *ground_speed)
 				/* switch to heading hold for the last meters, continue heading hold after */
 				MATHLIB_ASSERT (Vector2f_getX (&prev_wp, &prev_wp0));
 				MATHLIB_ASSERT (Vector2f_getY (&prev_wp, &prev_wp1));
+				MATHLIB_ASSERT (Vector2f_getX (&next_wp, &next_wp0));
+				MATHLIB_ASSERT (Vector2f_getY (&prev_wp, &next_wp1));
 				MATHLIB_ASSERT (Vector2f_getX (current_position, &current_position0));
 				MATHLIB_ASSERT (Vector2f_getY (current_position, &current_position1));
-				wp_distance = get_distance_to_next_waypoint(prev_wp0, prev_wp1, current_position0, current_position1);
+				wp_distance = get_distance_to_next_waypoint(current_position0, current_position1, next_wp0, next_wp1);
+				bearing_lastwp_currwp = get_bearing_to_next_waypoint(prev_wp0, prev_wp1, next_wp0, next_wp1);
 
 				//warnx("wp dist: %d, alt err: %d, noret: %s", (int)wp_distance, (int)altitude_error, (land_noreturn) ? "YES" : "NO");
 
 				if (wp_distance < 15.0f || land_noreturn) {
 
 					/* heading hold, along the line connecting this and the last waypoint */
+					if (!land_noreturn) {//set target_bearing in first occurrence
+						if (_global_triplet.previous_valid) {
+							target_bearing = bearing_lastwp_currwp;
+						} else {
+							target_bearing = _att.yaw;
+						}
+					}
 					
 
-					// if (_global_triplet.previous_valid) {
-					// 	target_bearing = get_bearing_to_next_waypoint(prev_wp.getX(), prev_wp.getY(), next_wp.getX(), next_wp.getY());
-					// } else {
-
-					if (!land_noreturn)
-						target_bearing = _att.yaw;
-					//}
-
-					//warnx("NORET: %d, target_bearing: %d, yaw: %d", (int)land_noreturn, (int)degrees(target_bearing), (int)degrees(_att.yaw));
-
 					ECL_l1_position_controller_navigate_heading(target_bearing, _att.yaw, ground_speed);
+					_att_sp.roll_body = constrain(_att_sp.roll_body, radians(-10.0f), radians(10.0f));
 
-					if (altitude_error > -5.0f)
-						land_noreturn = 1 /* true */;
+					land_noreturn = 1 /* true */;
 
 				} else {
 
@@ -407,11 +407,12 @@ int control_position(Vector *current_position, Vector *ground_speed)
 				/* apply minimum pitch (flare) and limit roll if close to touch down, altitude error is negative (going down) */
 				// XXX this could make a great param
 
-				flare_angle_rad = radians(10.0f); //radians(_global_triplet.current.param1)
+				flare_angle_rad = radians(5.0f); //radians(_global_triplet.current.param1)
 				//land_pitch_min = radians(5.0f);
 				throttle_land = _fw_position_control_parameters.throttle_min + (_fw_position_control_parameters.throttle_max - _fw_position_control_parameters.throttle_min) * 0.1f;
-				airspeed_land = _fw_position_control_parameters.airspeed_min;
-				airspeed_approach = (_fw_position_control_parameters.airspeed_min + _fw_position_control_parameters.airspeed_trim) / 2.0f;
+				airspeed_land = 1.3 * _fw_position_control_parameters.airspeed_min;
+				//airspeed_approach = (_fw_position_control_parameters.airspeed_min + _fw_position_control_parameters.airspeed_trim) / 2.0f;
+				airspeed_approach = 1.3 * _fw_position_control_parameters.airspeed_min;
 
 				if (altitude_error > -4.0f) {
 
@@ -454,7 +455,7 @@ int control_position(Vector *current_position, Vector *ground_speed)
 				_att_sp.yaw_body = ECL_l1_position_controller_nav_bearing();
 
 				/* apply minimum pitch and limit roll if target altitude is not within 10 meters */
-				if (altitude_error > 10.0f) {
+				if (altitude_error > 15.0f) {
 
 					/* enforce a minimum of 10 degrees pitch up on takeoff, or take parameter */
 					ECL_tecs_update_pitch_throttle(&_R_nb, _att.pitch, _global_pos.altitude, _global_triplet.current.altitude, calculate_target_airspeed(_fw_position_control_parameters.airspeed_min),

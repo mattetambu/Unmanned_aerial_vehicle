@@ -89,6 +89,8 @@ void *multirotor_position_control_thread_main()
 	PID_t z_pos_pid;
 	thrust_pid_t z_vel_pid;
 
+	float thrust_sp[3] = { 0.0f, 0.0f, 0.0f };
+
 
 	/* structures */
 	struct parameter_update_s ps;
@@ -553,13 +555,14 @@ void *multirotor_position_control_thread_main()
 				global_vel_sp.vy = 0.0f;
 			}
 
+			//fprintf (stderr, "global_vel_sp.vx:%.3f\tglobal_vel_sp.vy:%.3f\tglobal_vel_sp.vz:%.3f\n", global_vel_sp.vx, global_vel_sp.vy, global_vel_sp.vz);
+
 			/* publish new velocity setpoint */
 			orb_publish(ORB_ID(vehicle_global_velocity_setpoint), global_vel_sp_pub, &global_vel_sp);
 			// TODO subscribe to velocity setpoint if altitude/position control disabled
 
 			if (control_flags.flag_control_climb_rate_enabled || control_flags.flag_control_velocity_enabled) {
 				/* run velocity controllers, calculate thrust vector with attitude-thrust compensation */
-				float thrust_sp[3] = { 0.0f, 0.0f, 0.0f };
 
 				if (control_flags.flag_control_climb_rate_enabled) {
 					if (reset_int_z) {
@@ -625,6 +628,7 @@ void *multirotor_position_control_thread_main()
 				}
 
 				att_sp.timestamp = get_absolute_time();
+				//fprintf (stderr, "att_sp.roll:%.3f\tatt_sp.pitch:%.3f\tatt_sp.yaw:%.3f\tatt_sp.thrust:%.3f\n", att_sp.roll_body, att_sp.pitch_body, att_sp.yaw_body, att_sp.thrust);
 
 				/* publish new attitude setpoint */
 				orb_publish(ORB_ID(vehicle_attitude_setpoint), att_sp_pub, &att_sp);

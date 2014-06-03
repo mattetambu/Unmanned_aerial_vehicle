@@ -150,10 +150,23 @@ int Vector3f_sub_Vector3f (Vector3f *v, Vector3f *right)
 
 int Vector3f_mul_Vector3f (Vector3f *v, float *result, Vector3f *right)
 {
+	return Vector3f_dot (v, result, right);
+}
+
+int Vector3f_emul_Vector3f (Vector3f *v, Vector3f *result, Vector3f *right)
+{
 	CHECK_VECTOR3F(v);
 	CHECK_VECTOR3F(right);
-	
-	return Vector3f_dot (v, result, right);
+
+	return Vector_emul_Vector (v, result, right, VECTOR3F_ROWS);
+}
+
+int Vector3f_ediv_Vector3f (Vector3f *v, Vector3f *result, Vector3f *right)
+{
+	CHECK_VECTOR3F(v);
+	CHECK_VECTOR3F(right);
+
+	return Vector_ediv_Vector (v, result, right, VECTOR3F_ROWS);
 }
 
 int Vector3f_cross_Vector3f (Vector3f *v, Vector3f *right)

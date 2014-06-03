@@ -12,8 +12,8 @@
 	#define DEFAULT_UDP_OUTPUT_PORT		8081
 	#define DEFAULT_TCP_OUTPUT_PORT		10011
 	#define DEFAULT_IP_ADDRESS			"127.0.0.1"
-	#define INPUT_FREQUENCY				"50"
-	#define OUTPUT_FREQUENCY			"50"
+	#define INPUT_FREQUENCY				"40"
+	#define OUTPUT_FREQUENCY			"40"
 
 
 	#define DEFAULT_AIRCRAFT_MODEL		"quadcopter"
@@ -24,13 +24,13 @@
 	#define UNIX_FLIGHTGEAR_LANCH_COMMAND			"\"/some_path/FlightGear/bin/fgfs\" --fg-root=\"/some_path/FlightGear/data\" --fg-scenery=\"/some_path/FlightGear/data/Scenery\""
 
 	#ifdef ENGINE_AUTOSTART
-		#define FLIGHTGEAR_LANCH_GENERAL_OPTIONS		" --language=it --control=keyboard --enable-fuel-freeze --enable-hud --timeofday=noon --enable-auto-coordination --httpd=5500 --prop:/engines/engine/running=true --prop:/engines/engine/starter=true --prop:/engines/engine/rpm=100"
+		#define FLIGHTGEAR_LANCH_GENERAL_OPTIONS		" --language=it --control=keyboard --enable-fuel-freeze --enable-hud --timeofday=noon --httpd=5500 --roll=0 --pitch=0 --wind=0@0 --turbulence=0.0 --disable-sound --prop:/engines/engine/running=true --prop:/engines/engine/starter=true --prop:/engines/engine/rpm=100"
 	#else
-		#define FLIGHTGEAR_LANCH_GENERAL_OPTIONS		" --language=it --control=keyboard --enable-fuel-freeze --enable-hud --timeofday=noon --enable-auto-coordination --httpd=5500"
+		#define FLIGHTGEAR_LANCH_GENERAL_OPTIONS		" --language=it --control=keyboard --enable-fuel-freeze --enable-hud --timeofday=noon --httpd=5500 --roll=0 --pitch=0 --wind=0@0 --turbulence=0.0 --disable-sound --vc=0"
 	#endif
 
 
-	#define FLIGHTGEAR_LANCH_AIRPORT_OPTIONS		" --airport=KHAF"
+	#define FLIGHTGEAR_LANCH_AIRPORT_OPTIONS		" --airport=KSFO"
 	#ifdef START_IN_AIR
 		#define FLIGHTGEAR_LANCH_IN_AIR_OPTIONS		" --in-air --vc=120 --altitude=100"
 	#endif

@@ -33,12 +33,12 @@
 enum {
 	combobox_value_manual = 0,
 	combobox_value_stabilize,
-	combobox_value_fly_by_wire,
-	combobox_value_easy,
+	//combobox_value_fly_by_wire,
+	//combobox_value_easy,
 	combobox_value_loiter,
 	combobox_value_rtl,
-	combobox_value_takeoff,
-	combobox_value_land,
+	//combobox_value_takeoff,
+	//combobox_value_land,
 	combobox_value_mission
 };
 
@@ -164,6 +164,7 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 			manual_control_setpoint.second_switch = secondary_switch_stabilize;
 			break;
 
+		/*
 		case combobox_value_fly_by_wire:
 			manual_control_setpoint.mode_switch = mode_switch_support;
 			manual_control_setpoint.second_switch = secondary_switch_fly_by_wire;
@@ -173,6 +174,7 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 			manual_control_setpoint.mode_switch = mode_switch_support;
 			manual_control_setpoint.second_switch = secondary_switch_easy;
 			break;
+		*/
 
 		case combobox_value_loiter:
 			manual_control_setpoint.mode_switch = mode_switch_auto;
@@ -184,6 +186,7 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 			manual_control_setpoint.second_switch = secondary_switch_rtl;
 			break;
 
+		/*
 		case combobox_value_takeoff:
 			manual_control_setpoint.mode_switch = mode_switch_auto;
 			manual_control_setpoint.second_switch = secondary_switch_takeoff;
@@ -193,6 +196,7 @@ void flight_mode_combobox_changed (GtkComboBox *flight_mode_combobox, gpointer u
 			manual_control_setpoint.mode_switch = mode_switch_auto;
 			manual_control_setpoint.second_switch = secondary_switch_land;
 			break;
+		*/
 
 		case combobox_value_mission:
 			manual_control_setpoint.mode_switch = mode_switch_auto;

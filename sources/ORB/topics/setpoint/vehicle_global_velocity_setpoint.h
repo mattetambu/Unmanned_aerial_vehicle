@@ -15,7 +15,9 @@
 	 * @{
 	 */
 
-	/**< Velocity setpoint in NED frame */
+	/**
+	 * Velocity setpoint in NED frame
+	 */
 	struct vehicle_global_velocity_setpoint_s
 	{
 		float vx;		/**< in m/s NED			  		*/

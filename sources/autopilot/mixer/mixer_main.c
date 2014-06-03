@@ -20,9 +20,11 @@
 #include "../../ORB/topics/actuator/actuator_controls.h"
 #include "../../ORB/topics/actuator/actuator_outputs.h"
 #include "../../ORB/topics/actuator/actuator_effective_controls.h"
+#include "../../ORB/topics/position/vehicle_global_position.h"
 
 
-#define MOTOR_POWER_CONTROL_IN_01_RANGE
+
+//#define OVERWRITE_CONTROLS_BEFORE_TAKEOFF
 
 bool_t hil_enabled;
 fixedwing_mixer_t fixedwing_mixer;
@@ -40,10 +42,10 @@ const rotor_scale _config_quad_x[] = {
 	{ -0.707107, -0.707107, -1.00 },
 };
 const rotor_scale _config_quad_plus[] = {
-	{ -1.000000,  0.000000,  1.00 },
-	{  1.000000,  0.000000,  1.00 },
 	{  0.000000,  1.000000, -1.00 },
 	{ -0.000000, -1.000000, -1.00 },
+	{ -1.000000,  0.000000,  1.00 },
+	{  1.000000,  0.000000,  1.00 },
 };
 const rotor_scale _config_quad_v[] = {
 	{ -0.927184,  0.374607,  1.00 },
@@ -164,12 +166,7 @@ int fixedwing_mixer_init ()
 	fixedwing_mixer_init_component (0 /* aileron */, 1.0f, 1.0f, 0.0f);
 	fixedwing_mixer_init_component (1 /* elevator */, -1.0f, -1.0f, 0.0f); // XXX CHECK THIS
 	fixedwing_mixer_init_component (2 /* rudder */, 1.0f, 1.0f, 0.0f);
-
-#ifndef MOTOR_POWER_CONTROL_IN_01_RANGE
-	fixedwing_mixer_init_component (3 /* throttle */, 0.0f, 2.0f, -1.0f);
-#else
 	fixedwing_mixer_init_component (3 /* throttle */, 0.0f, 1.0f, 0.0f);
-#endif
 
 	return 0;
 }
@@ -180,12 +177,7 @@ int multirotor_mixer_init (rotor_geometry geometry)
 	multirotor_mixer.roll_scale = 1.0f;
 	multirotor_mixer.pitch_scale = 1.0f;
 	multirotor_mixer.yaw_scale = 1.0f;
-
-#ifndef MOTOR_POWER_CONTROL_IN_01_RANGE
-	multirotor_mixer.deadband = -1.0f;	/* shift to output range here to avoid runtime calculation */
-#else
 	multirotor_mixer.deadband = 0.0f;	/* shift to output range here to avoid runtime calculation */
-#endif
 
 	multirotor_mixer.rotor_count = _config_rotor_count[geometry];
 	multirotor_mixer.rotors = _config_index[geometry];
@@ -281,15 +273,16 @@ int multirotor_mix(float* controls, float *controls_eff, float *outputs)
 	controls_eff[2] = yaw;
 	controls_eff[3] = (outputs[0]/2 + outputs[1]/2 + outputs[2]/2 + outputs[3]/2) / 4.0f;
 
-#ifndef MOTOR_POWER_CONTROL_IN_01_RANGE
-	/* scale values into the -1.0 - 1.0 range */
-	for (i = 0; i < multirotor_mixer.rotor_count; i++)
-		outputs[i] -= 1.0f;
-#else
+
 	/* scale values into the 0.0 - 1.0 range */
 	for (i = 0; i < multirotor_mixer.rotor_count; i++)
-		outputs[i] /= 2.0f;
-#endif
+	{
+		if (getenv("DOUBLE_OUTPUT"))
+			outputs[i] /= 1.0f;
+		else
+			outputs[i] /= 2.0f;
+
+	}
 
 	/* ensure outputs are out of the deadband */
 	for (i = 0; i < multirotor_mixer.rotor_count; i++)
@@ -307,10 +300,10 @@ void* mixer_thread_main (void* args)
 	fprintf (stdout, "Mixer started\n");
 	fflush(stdout);
 
-
 	int i, updated;
-	absolute_time usec_max_poll_wait_time = 100000;
+	float takeoff_alt;
 	param_t hil_param;
+	param_t takeoff_alt_param = PARAM_INVALID;
 
 	/* Advertise topics */
 	orb_advert_t pub_actuator_outputs = -1;
@@ -322,9 +315,13 @@ void* mixer_thread_main (void* args)
 	orb_subscr_t actuator_controls_sub;
 	orb_subscr_t armed_sub;
 	orb_subscr_t param_sub;
+	orb_subscr_t global_pos_sub;
 	struct actuator_controls_s actuator_controls;
 	struct actuator_armed_s armed;
 	struct parameter_update_s p_update;
+#ifdef OVERWRITE_CONTROLS_BEFORE_TAKEOFF
+	struct vehicle_global_position_s global_pos;
+#endif
 
 	memset (&eff_controls, 0, sizeof(eff_controls));
 	memset (&outputs, 0, sizeof(outputs));
@@ -360,6 +357,13 @@ void* mixer_thread_main (void* args)
 		exit (-1);
 	}
 
+	global_pos_sub = orb_subscribe (ORB_ID(vehicle_global_position));
+	if (global_pos_sub == -1)
+	{
+		fprintf (stderr, "Mixer thread failed to subscribe the vehicle_global_position topic\n");
+		exit (-1);
+	}
+
 	param_sub = orb_subscribe (ORB_ID(parameter_update));
 	if (param_sub == -1)
 	{
@@ -368,7 +372,8 @@ void* mixer_thread_main (void* args)
 	}
 	
 	hil_param = param_find("HIL_ENABLED");
-	if (hil_param == PARAM_INVALID || param_get (hil_param, &hil_enabled) != 0)
+	takeoff_alt_param = param_find("TAKEOFF_ALT");
+	if (hil_param == PARAM_INVALID || takeoff_alt_param == PARAM_INVALID)
 	{
 		/* parameter setup went wrong, abort */
 		fprintf (stderr, "Mixer thread aborting on startup due to an error\n");
@@ -395,7 +400,7 @@ void* mixer_thread_main (void* args)
 	while (!_shutdown_all_systems)
 	{
 		// wait for the result of the autopilot logic calculation
-		updated = orb_poll (ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_controls_sub, usec_max_poll_wait_time);
+		updated = orb_poll (ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_controls_sub, 50000);
 		
 		/* timed out - periodic check for _shutdown_all_systems, etc. */
 		if (!updated)
@@ -411,26 +416,41 @@ void* mixer_thread_main (void* args)
 		orb_copy (ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_controls_sub, (void *) &actuator_controls);
 
 
+		/* parameters */
+		updated = orb_check (ORB_ID(parameter_update), param_sub);
+		if (updated) {
+			orb_copy(ORB_ID(parameter_update), param_sub, &p_update);
+
+			/* update parameters */
+			param_get (hil_param, &hil_enabled);
+			param_get(takeoff_alt_param, &takeoff_alt);
+		}
+
 		/* armed */
 		if (orb_check(ORB_ID(actuator_armed), armed_sub))
 		{
 			orb_copy(ORB_ID(actuator_armed), armed_sub, &armed);
 		}
 
-		/* parameters */
-		updated = orb_check (ORB_ID(parameter_update), param_sub);
-		if (updated) {
-			orb_copy(ORB_ID(parameter_update), param_sub, &p_update);
-			
-			/* update parameters */
-			param_get (hil_param, &hil_enabled);
+#ifdef OVERWRITE_CONTROLS_BEFORE_TAKEOFF
+		/* position */
+		if (orb_check(ORB_ID(vehicle_global_position), global_pos_sub))
+		{
+			orb_copy(ORB_ID(vehicle_global_position), global_pos_sub, &global_pos);
 		}
+
+		if ((global_pos.altitude - global_pos.ground_level) < takeoff_alt)
+		{
+			actuator_controls.control[0] = 0.0f;
+			actuator_controls.control[2] = 0.0f;
+		}
+#endif
 
 
 		if (is_rotary_wing)
-			multirotor_mix(actuator_controls.control, outputs.output, eff_controls.control);
+			multirotor_mix(actuator_controls.control, eff_controls.control, outputs.output);
 		else
-			fixedwing_mix(actuator_controls.control, outputs.output, eff_controls.control);
+			fixedwing_mix(actuator_controls.control, eff_controls.control, outputs.output);
 
 
 		if (!armed.armed)
@@ -479,6 +499,9 @@ void* mixer_thread_main (void* args)
 
 	if (orb_unsubscribe (ORB_ID(actuator_armed), armed_sub, pthread_self()) < 0)
 		fprintf (stderr, "Mixer thread failed to unsubscribe to actuator_controls topic\n");
+
+	if (orb_unsubscribe (ORB_ID(vehicle_global_position), global_pos_sub, pthread_self()) < 0)
+		fprintf (stderr, "Mixer thread failed to unsubscribe to vehicle_global_position topic\n");
 
 	if (orb_unsubscribe (ORB_ID(parameter_update), param_sub, pthread_self()) < 0)
 		fprintf (stderr, "Mixer thread failed to unsubscribe to actuator_controls topic\n");

@@ -214,6 +214,39 @@ inline int Vector_sub_Vector (Vector *v, Vector *right)
 }
 
 
+inline int Vector_emul_Vector (Vector *v, Vector *result, Vector *right, uint32_t n_rows)
+{
+	uint32_t i;
+	Vector T;
+
+	MATHLIB_ASSERT (Vector_init_zero (&T, n_rows));
+
+	if (v->rows != right->rows)
+		return -1;
+
+	for (i = 0; i < v->rows; i++)
+		T.data[i] = v->data[i] * right->data[i];
+
+	return Vector_init_Vector (result, &T);
+}
+
+inline int Vector_ediv_Vector (Vector *v, Vector *result, Vector *right, uint32_t n_rows)
+{
+	uint32_t i;
+	Vector T;
+
+	MATHLIB_ASSERT (Vector_init_zero (&T, n_rows));
+
+	if (v->rows != right->rows)
+		return -1;
+
+	for (i = 0; i < v->rows; i++)
+		T.data[i] = v->data[i] / right->data[i];
+
+	return Vector_init_Vector (result, &T);
+}
+
+
 inline int Vector_change_sign (Vector *v)
 {
 	uint32_t i;

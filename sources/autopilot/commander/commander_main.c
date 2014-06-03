@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <string.h>
 #include <math.h>
 #include <poll.h>
@@ -95,8 +96,8 @@ commander_params_define ()
 	PARAM_DEFINE_FLOAT (BAT_V_EMPTY, 3.2f);
 	PARAM_DEFINE_FLOAT (BAT_V_FULL, 4.05f);
 
-	PARAM_DEFINE_FLOAT (TAKEOFF_ALT, 7.5f); // XXX check this value (default 7.5f)
-	PARAM_DEFINE_FLOAT (LAND_ALT, 2.0f); // XXX check this value
+	PARAM_DEFINE_FLOAT (TAKEOFF_ALT, 7.0f);
+	PARAM_DEFINE_FLOAT (LAND_ALT, 2.0f);
 	PARAM_DEFINE_FLOAT (LAND_TIME, 3.0f);
 	PARAM_DEFINE_FLOAT (LAND_THRUST, 0.3f);
 
@@ -919,7 +920,8 @@ void* commander_thread_main (void* args)
 				home_position.s_variance_m_s = gps_position.s_variance_m_s;
 				home_position.p_variance_m = gps_position.p_variance_m;
 
-				//fprintf (stderr, "home_position: lat = %.7f, lon = %.7f\n", home_position.latitude, home_position.longitude);
+				fprintf (stdout, "INFO: home position defined (latitude = %.7f, longitude = %.7f)\n", (double) home_position.latitude / 1e7f, (double) home_position.longitude / 1e7f);
+				fflush (stdout);
 
 				/* announce new home position */
 				orb_publish(ORB_ID(home_position), home_position_adv, &home_position);
@@ -982,7 +984,7 @@ void* commander_thread_main (void* args)
 				} else {
 					if (status.rc_signal_lost) {
 						//mavlink_log_critical(mavlink_fd, "#audio: RC signal regained");
-						fprintf (stderr, "RC signal regained\n");
+						fprintf (stderr, "INFO: RC signal regained\n");
 						status_changed = 1;
 					}
 				}

@@ -5,7 +5,6 @@
 
 	#include "../uav_library/common.h"
 	
-
 	/* function prototypes */
 	void* autopilot_loop (void* args);
 	

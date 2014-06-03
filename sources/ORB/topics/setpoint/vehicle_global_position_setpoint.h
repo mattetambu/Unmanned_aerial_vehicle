@@ -19,7 +19,8 @@
 	enum navigation_command_t
 	{
 		// commands
-		navigation_command_waypoint = 0,
+		navigation_command_none = 0,
+		navigation_command_waypoint,
 		navigation_command_loiter_time,
 		navigation_command_loiter_circle,
 		navigation_command_loiter_unlim,

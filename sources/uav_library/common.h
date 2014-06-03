@@ -14,19 +14,9 @@
 
 	/* definitions */
 	//#define INTERACTIVE
-	#define DEBUG
+	//#define DEBUG
+	//#define BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	#define START_TEST_THREAD	0
-	#define N_SPACES_PER_TAB	5
-	#define LENGTH_MISURE_UNIT	"meters"
-	#define ANGLE_MISURE_UNIT	"degrees"
-	#define TIME_MISURE_UNIT	"seconds"
-	#ifndef NULL
-		#define NULL	((void*) 0)
-	#endif
-
-	#ifndef size_t
-		#define size_t	unsigned int
-	#endif
 
 
 	/* macros */

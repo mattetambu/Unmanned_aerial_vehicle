@@ -1,6 +1,6 @@
 /**
- * @file position_estimator_main.c
- * Model-identification based position estimator for multirotors
+ * @file position_estimator_ideal_main.c
+ * Ideal position estimator based on Flightgear data
  */
 
 #include <unistd.h>
@@ -19,18 +19,13 @@
 #include "../../ORB/topics/position/vehicle_gps_position.h"
 #include "../../ORB/topics/position/vehicle_local_position.h"
 #include "../../ORB/topics/position/vehicle_global_position.h"
+#include "../../ORB/topics/position/vehicle_hil_global_position.h"
 
 #include "../../uav_library/common.h"
 #include "../../uav_library/param/param.h"
 #include "../../uav_library/math/limits.h"
 #include "../../uav_library/time/drv_time.h"
 #include "../../uav_library/geo/geo.h"
-
-#include "position_estimator_mc_params.h"
-#include "codegen/kalman_dlqe2.h"
-#include "codegen/kalman_dlqe2_initialize.h"
-#include "codegen/kalman_dlqe3.h"
-#include "codegen/kalman_dlqe3_initialize.h"
 
 
 
@@ -41,7 +36,7 @@ float land_t, land_alt, land_thrust;
 
 
 // WARNING: considering ground level as constant and equal to home_alt
-void land_detector (bool_t *landed, float alt, float thrust)
+static void land_detector (bool_t *landed, float alt, float thrust)
 {
 	/* detect land */
 	float prev_land_status = *landed;
@@ -77,46 +72,16 @@ void land_detector (bool_t *landed, float alt, float thrust)
 }
 
 
-int position_estimator_mc_thread_main(int argc, char *argv[])
+int position_estimator_ideal_thread_main(int argc, char *argv[])
 {
 	/* welcome user */
 	fprintf (stdout, "Position estimator started\n");
 	fflush(stdout);
 
 	/* initialize values */
-	float z[3] = {0, 0, 0}; /* output variables from tangent plane mapping */
-	// float rotMatrix[4] = {1.0f,  0.0f, 0.0f,  1.0f};
-	float x_x_aposteriori_k[3] = {1.0f, 0.0f, 0.0f};
-	float x_y_aposteriori_k[3] = {1.0f, 0.0f, 0.0f};
-	float x_z_aposteriori_k[3] = {1.0f, 0.0f, 0.0f};
-	float x_x_aposteriori[3] = {0.0f, 0.0f, 0.0f};
-	float x_y_aposteriori[3] = {1.0f, 0.0f, 0.0f};
-	float x_z_aposteriori[3] = {1.0f, 0.0f, 0.0f};
-
-	// XXX this is wrong and should actual dT instead
-	const float dT_const_50 = 1.0f/50.0f;
-
-	//computed from dlqe in matlab
-	const float K_vicon_50Hz[3] = {0.5297f, 0.9873f, 0.9201f};
-	float K[3] = {0.0f, 0.0f, 0.0f};
-	int baro_loop_cnt = 0;
-	int baro_loop_end = 70; /* measurement for 1 second */
-	float p0_Pa = 0.0f; /* to determin while start up */
-	float rho0 = 1.293f; /* standard pressure */
-	const float const_earth_gravity = 9.81f;
-
-	float posX = 0.0f;
-	float posY = 0.0f;
-	float posZ = 0.0f;
-
-	double lat, lat_current;
-	double lon, lon_current;
-
+	float home_x, home_y, curr_x, curr_y;
 	float gps_origin_altitude = 0.0f;
-
-	/* Initialize filter */
-	kalman_dlqe2_initialize();
-	kalman_dlqe3_initialize();
+	double lat_current, lon_current;
 
 	/* declare and safely initialize all structs */
 	struct parameter_update_s update;
@@ -134,6 +99,8 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 	memset(&local_pos_est, 0, sizeof(local_pos_est));
 	struct vehicle_global_position_s global_pos_est;
 	memset(&global_pos_est, 0, sizeof(global_pos_est));
+	struct vehicle_hil_global_position_s hil_global_pos;
+	memset(&hil_global_pos, 0, sizeof(hil_global_pos));
 
 
 	/* subscribe */
@@ -179,6 +146,13 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 		exit(-1);
 	}
 
+	orb_subscr_t hil_pos_sub = orb_subscribe(ORB_ID(vehicle_hil_global_position));
+	if (hil_pos_sub < 0)
+	{
+		fprintf (stderr, "Position estimator thread failed to subscribe to vehicle_hil_global_position topic\n");
+		exit(-1);
+	}
+
 
 	/* advertise */
 	orb_advert_t local_pos_est_pub = orb_advertise(ORB_ID(vehicle_local_position));
@@ -201,8 +175,6 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 
 	bool_t updated = 0;
 	bool_t gps_updated = 0;
-	bool_t flag_use_baro = 0;
-	bool_t flag_baro_initialized = 0; /* in any case disable baroINITdone */
 
 
 	/* initialize parameter handles */
@@ -211,8 +183,7 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 	param_land_alt = param_find ("LAND_ALT");
 	param_land_thrust = param_find ("LAND_THRUST");
 
-	if (param_land_time == PARAM_INVALID || param_land_alt == PARAM_INVALID || param_land_thrust == PARAM_INVALID ||
-		position_estimator_mc_params_init() != 0)
+	if (param_land_time == PARAM_INVALID || param_land_alt == PARAM_INVALID || param_land_thrust == PARAM_INVALID)
 	{
 		/* parameter setup went wrong, abort */
 		fprintf (stderr, "Position estimator aborting on startup due to an error\n");
@@ -242,6 +213,7 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 		&& (gps.eph_m < hdop_threshold_m)
 		&& (gps.epv_m < vdop_threshold_m)
 		&& (get_absolute_time() - gps.timestamp_position < 2000000))) {
+
 		/* wait for GPS updates, BUT READ VEHICLE STATUS (!)
 		 * this choice is critical, since the vehicle status might not
 		 * actually change, if this app is started after GPS lock was
@@ -252,6 +224,7 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 			/* Read gps position */
 			orb_copy(ORB_ID(vehicle_gps_position), vehicle_gps_sub, &gps);
 		}
+
 		updated = orb_check (ORB_ID(parameter_update), sub_params);
 		if (updated) {
 			/* Read out parameters to check for an update there, e.g. useGPS variable */
@@ -259,7 +232,6 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(parameter_update), sub_params, &updated);
 
 			/* update parameters */
-			position_estimator_mc_params_update ();
 			param_get (param_land_time, &land_t);
 			param_get (param_land_alt, &land_alt);
 			param_get (param_land_thrust, &land_thrust);
@@ -280,14 +252,15 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 
 	/* initialize coordinates */
 	map_projection_init(lat_current, lon_current);
+	map_projection_project (local_pos_est.ref_lat / 1e7, local_pos_est.ref_lon / 1e7, &home_x, &home_y);
 
-	flag_use_baro = position_estimator_mc_parameters.baro;
+
 
 	/**< main_loop */
 	while (!_shutdown_all_systems) {
 		/* wait for up to 20ms for data */
 		gps_updated = 0;
-		updated = orb_poll(ORB_ID(vehicle_gps_position), vehicle_gps_sub, 20000);
+		updated = orb_poll(ORB_ID(vehicle_hil_global_position), hil_pos_sub, 20000);
 
 		/* this is undesirable but not much we can do - might want to flag unhappy status */
 		if (updated < 0) {
@@ -297,14 +270,7 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 		else if (updated)
 		{
 			/* new GPS value */
-			orb_copy(ORB_ID(vehicle_gps_position), vehicle_gps_sub, &gps);
-
-			/* Project gps lat lon (Geographic coordinate system) to plane*/
-			map_projection_project(((double)(gps.latitude)) * (double) 1e-7, ((double)(gps.longitude)) * (double) 1e-7, &(z[0]), &(z[1]));
-
-			posX = z[0];
-			posY = z[1];
-			posZ = (float)(gps.altitude * 1e-3f);
+			orb_copy(ORB_ID(vehicle_hil_global_position), hil_pos_sub, &hil_global_pos);
 			gps_updated = 1;
 		}
 
@@ -316,9 +282,9 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(parameter_update), sub_params, &updated);
 
 			/* update parameters */
-			position_estimator_mc_params_update ();
-
-			flag_use_baro = position_estimator_mc_parameters.baro;
+			param_get (param_land_time, &land_t);
+			param_get (param_land_alt, &land_alt);
+			param_get (param_land_thrust, &land_thrust);
 		}
 
 		updated = orb_check (ORB_ID(vehicle_attitude), vehicle_attitude_sub);
@@ -338,112 +304,55 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(actuator_armed), armed_sub, &armed);
 		}
 
-		/* Main estimator loop */
-		updated = orb_check (ORB_ID(sensor_combined), sensor_sub);
-		if (updated) {
-			orb_copy(ORB_ID(sensor_combined), sensor_sub, &sensor);
-		}
-
-		// barometric pressure estimation at start up
-		if (!flag_baro_initialized){
-			// mean calculation over several measurements
-			if (baro_loop_cnt<baro_loop_end) {
-				p0_Pa += (sensor.baro_pres_mbar*100);
-				baro_loop_cnt++;
-			} else {
-				p0_Pa /= (float)(baro_loop_cnt);
-				flag_baro_initialized = 1;
-			}
-		}
-
-
 		/* initialize map projection with the last estimate (not at full rate) */
-		if (gps.fix_type > 2) {
-			/* x-y-position/velocity estimation in earth frame = gps frame */
-			kalman_dlqe3(dT_const_50,K_vicon_50Hz[0],K_vicon_50Hz[1],K_vicon_50Hz[2],x_x_aposteriori_k,posX,gps_updated,0.0f,0.0f,x_x_aposteriori);
-			memcpy(x_x_aposteriori_k, x_x_aposteriori, sizeof(x_x_aposteriori));
-			kalman_dlqe3(dT_const_50,K_vicon_50Hz[0],K_vicon_50Hz[1],K_vicon_50Hz[2],x_y_aposteriori_k,posY,gps_updated,0.0f,0.0f,x_y_aposteriori);
-			memcpy(x_y_aposteriori_k, x_y_aposteriori, sizeof(x_y_aposteriori));
-			/* z-position/velocity estimation in earth frame = vicon frame */
-			float z_est = 0.0f;
-			if (flag_baro_initialized && flag_use_baro) {
-				z_est = -p0_Pa*logf(p0_Pa/(sensor.baro_pres_mbar*100))/(rho0*const_earth_gravity);
-				K[0] = K_vicon_50Hz[0];
-				K[1] = K_vicon_50Hz[1];
-				K[2] = K_vicon_50Hz[2];
-				gps_updated = 1.0f; /* always enable the update, cause baro update = 200 Hz */
-			} else {
-				z_est = posZ;
-				K[0] = K_vicon_50Hz[0];
-				K[1] = K_vicon_50Hz[1];
-				K[2] = K_vicon_50Hz[2];
-			}
-
-			kalman_dlqe3(dT_const_50,K[0],K[1],K[2],x_z_aposteriori_k,z_est,gps_updated,0.0f,0.0f,x_z_aposteriori);
-			memcpy(x_z_aposteriori_k, x_z_aposteriori, sizeof(x_z_aposteriori));
-
+		if (gps_updated) {
+			map_projection_project (hil_global_pos.latitude / 1e7, hil_global_pos.longitude / 1e7, &curr_x, &curr_y);
 			local_pos_est.timestamp = get_absolute_time();
-			local_pos_est.x = x_x_aposteriori_k[0];
-			local_pos_est.vx = x_x_aposteriori_k[1];
-			local_pos_est.y = x_y_aposteriori_k[0];
-			local_pos_est.vy = x_y_aposteriori_k[1];
-			local_pos_est.z = -(x_z_aposteriori_k[0] - gps_origin_altitude);
-			local_pos_est.vz = x_z_aposteriori_k[1];
-			local_pos_est.yaw = att.yaw;
+			local_pos_est.x = curr_x - home_x;
+			local_pos_est.vx = hil_global_pos.vx;
+			local_pos_est.y = curr_y - home_y;
+			local_pos_est.vy = hil_global_pos.vy;
+			local_pos_est.ref_alt = hil_global_pos.ground_level;
+			local_pos_est.z = -(hil_global_pos.altitude - local_pos_est.ref_alt);
+			local_pos_est.vz =  hil_global_pos.vz;
+			local_pos_est.yaw = hil_global_pos.yaw;
 			land_detector (&local_pos_est.landed, -local_pos_est.z, (armed.armed)? actuator.control[3] : 0.0f);
+			local_pos_est.xy_valid = 1;
+			local_pos_est.z_valid = 1;
+			local_pos_est.xy_global = 1;
+			local_pos_est.z_global = 1;
+			local_pos_est.v_xy_valid = 1;
+			local_pos_est.v_z_valid = 1;
 
-			if ((check_finite(x_x_aposteriori_k[0])) && (check_finite(x_x_aposteriori_k[1])) && (check_finite(x_y_aposteriori_k[0])) &&
-				(check_finite(x_y_aposteriori_k[1])) && (check_finite(x_z_aposteriori_k[0])) && (check_finite(x_z_aposteriori_k[1]))) {
-
-				local_pos_est.xy_valid = 1;
-				local_pos_est.z_valid = 1;
-				local_pos_est.xy_global = 1;
-				local_pos_est.z_global = 1;
-				local_pos_est.v_xy_valid = 1;
-				local_pos_est.v_z_valid = 1;
-
-				/* publish local position estimate */
-				orb_publish(ORB_ID(vehicle_local_position), local_pos_est_pub, &local_pos_est);
-			}
-			else
-			{
-				local_pos_est.xy_valid = 0;
-				local_pos_est.z_valid = 0;
-				local_pos_est.xy_global = 0;
-				local_pos_est.z_global = 0;
-				local_pos_est.v_xy_valid = 0;
-				local_pos_est.v_z_valid = 0;
-			}
-
+			/* publish local position estimate */
+			orb_publish(ORB_ID(vehicle_local_position), local_pos_est_pub, &local_pos_est);
+			
 			/* publish on GPS updates */
-			if (gps_updated) {
-				map_projection_reproject(local_pos_est.x, local_pos_est.y, &lat, &lon);
+			global_pos_est.valid = local_pos_est.xy_valid && local_pos_est.z_valid;
+			global_pos_est.latitude = hil_global_pos.latitude;
+			global_pos_est.longitude = hil_global_pos.longitude;
+			global_pos_est.altitude = hil_global_pos.altitude;
 
-				global_pos_est.valid = local_pos_est.xy_valid && local_pos_est.z_valid;
-				global_pos_est.latitude = lat*1e7;
-				global_pos_est.longitude = lon*1e7;
-				global_pos_est.altitude = z_est;
+			global_pos_est.relative_altitude = hil_global_pos.altitude - gps_origin_altitude;
+			global_pos_est.baro_alt = gps_origin_altitude - local_pos_est.z;
+			global_pos_est.ground_level = local_pos_est.ref_alt;
+			global_pos_est.time_gps_usec = gps.time_gps_usec;
 
-				global_pos_est.relative_altitude = z_est - gps_origin_altitude;
-				global_pos_est.baro_alt = gps_origin_altitude - local_pos_est.z;
-				global_pos_est.ground_level = local_pos_est.ref_alt;
-				global_pos_est.time_gps_usec = gps.time_gps_usec;
-
-				/* set valid values even if position is not valid */
-				if (local_pos_est.v_xy_valid) {
-					global_pos_est.vx = local_pos_est.vx;
-					global_pos_est.vy = local_pos_est.vy;
-				}
-				if (local_pos_est.v_z_valid) {
-					global_pos_est.vz = local_pos_est.vz;
-				}
-
-				global_pos_est.yaw = local_pos_est.yaw;
-				global_pos_est.landed = local_pos_est.landed;
-
-				orb_publish(ORB_ID(vehicle_global_position), global_pos_est_pub, &global_pos_est);
+			/* set valid values even if position is not valid */
+			if (local_pos_est.v_xy_valid) {
+				global_pos_est.vx = local_pos_est.vx;
+				global_pos_est.vy = local_pos_est.vy;
 			}
+			if (local_pos_est.v_z_valid) {
+				global_pos_est.vz = local_pos_est.vz;
+			}
+
+			global_pos_est.yaw = local_pos_est.yaw;
+			global_pos_est.landed = local_pos_est.landed;
+
+			orb_publish(ORB_ID(vehicle_global_position), global_pos_est_pub, &global_pos_est);
 		}
+	
 	}
 
 
@@ -453,8 +362,8 @@ int position_estimator_mc_thread_main(int argc, char *argv[])
 	orb_unsubscribe(ORB_ID(parameter_update), sub_params, pthread_self());
 	orb_unsubscribe(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(actuator_armed), armed_sub, pthread_self());
-	orb_unsubscribe(ORB_ID(sensor_combined), sensor_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_gps_position), vehicle_gps_sub, pthread_self());
+	orb_unsubscribe(ORB_ID(vehicle_hil_global_position), hil_pos_sub, pthread_self());
 	orb_unsubscribe(ORB_ID(vehicle_attitude), vehicle_attitude_sub, pthread_self());
 
 	/*

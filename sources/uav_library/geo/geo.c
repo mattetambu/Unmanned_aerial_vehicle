@@ -23,6 +23,7 @@ static double scale;
 
 
 static const float M_DEG_TO_RAD = 0.01745329251994;
+static const float M_RAD_TO_DEG = 57.2957795130823;
 
 
 float _wrap_pi(float bearing)
@@ -252,6 +253,15 @@ float get_bearing_to_next_waypoint(double lat_now, double lon_now, double lat_ne
 	theta = _wrap_pi(theta);
 
 	return theta;
+}
+
+void add_vector_to_global_position(double lat_now, double lon_now, float v_n, float v_e, double *lat_res, double *lon_res)
+{
+	double lat_now_rad = lat_now * M_DEG_TO_RAD;
+	double lon_now_rad = lon_now * M_DEG_TO_RAD;
+
+	*lat_res = (lat_now_rad + v_n / CONSTANTS_RADIUS_OF_EARTH) * M_RAD_TO_DEG;
+	*lon_res = (lon_now_rad + v_e / (CONSTANTS_RADIUS_OF_EARTH * cos(lat_now_rad))) * M_RAD_TO_DEG;
 }
 
 void get_vector_to_next_waypoint(double lat_now, double lon_now, double lat_next, double lon_next, float* vx, float* vy)

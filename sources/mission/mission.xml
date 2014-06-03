@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 
 <mission>
-	<command name="takeoff" id="24" altitude="60" latitude="18.984234" longitude="98.217462178"/>
-	<command name="loiter_time" id="16" altitude="73" latitude="38.984234" longitude="58.217462178" seconds="20" mode="anticlockwise"/>
-	<command name="waypoint" id="1" altitude="43" latitude="34.4324234" longitude="12.123123123"/>
-	<command name="waypoint" id="2" altitude="50" latitude="18.984234" longitude="98.217462178"/>
+	<command name="waypoint" id="1" altitude="43" latitude="37.5324234" longitude="-122.123123123"/>
+	<command name="waypoint" id="2" altitude="50" latitude="37.514234" longitude="-122.317462178"/>
+	<command name="loiter_time" id="16" altitude="73" latitude="37.504234" longitude="-122.217462178" seconds="20" mode="anticlockwise"/>
 </mission>

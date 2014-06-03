@@ -68,7 +68,7 @@ inline int Matrix_init_float_pointer (Matrix *m, uint32_t n_rows, uint32_t n_col
 // copy constructor
 inline int Matrix_init_Matrix (Matrix *m, Matrix *right)
 {
-	//CHECK_MATRIX(right);
+	CHECK_MATRIX(right);
 	if (!m)
 		return -1;
 
@@ -81,7 +81,7 @@ inline int Matrix_init_Matrix (Matrix *m, Matrix *right)
 
 inline int Matrix_get_data (Matrix *m, float *result, uint32_t row, uint32_t col)
 {
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	CHECK_MATRIX_INDEX_PARAM (row, m->rows);
 	CHECK_MATRIX_INDEX_PARAM (col, m->cols);
 	if (!result)
@@ -94,7 +94,7 @@ inline int Matrix_get_data (Matrix *m, float *result, uint32_t row, uint32_t col
 
 inline int Matrix_set_data (Matrix *m, float data, uint32_t row, uint32_t col)
 {
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	CHECK_MATRIX_INDEX_PARAM (row, m->rows);
 	CHECK_MATRIX_INDEX_PARAM (col, m->cols);
 	
@@ -107,7 +107,7 @@ inline int Matrix_set_all (Matrix *m, float data)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -120,8 +120,8 @@ inline int Matrix_compare (Matrix *m, Matrix *right)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
-	//CHECK_MATRIX(right);
+	CHECK_MATRIX(m);
+	CHECK_MATRIX(right);
 	
 	if (m->rows != right->rows ||
 		m->cols != right->cols)
@@ -140,7 +140,7 @@ inline int Matrix_add_float (Matrix *m, float value)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -153,7 +153,7 @@ inline int Matrix_sub_float (Matrix *m, float value)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -166,7 +166,7 @@ inline int Matrix_mul_float (Matrix *m, float value)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -179,7 +179,7 @@ inline int Matrix_div_float (Matrix *m, float value)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -194,7 +194,7 @@ inline int Matrix_mul_Vector (Matrix *m, Vector *result, Vector *right)
 	float f_result;
 	Vector T;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	CHECK_VECTOR(right);
 	
 	if (m->cols != right->rows)
@@ -218,8 +218,8 @@ inline int Matrix_add_Matrix (Matrix *m, Matrix *right)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
-	//CHECK_MATRIX(right);
+	CHECK_MATRIX(m);
+	CHECK_MATRIX(right);
 	
 	if (m->rows != right->rows ||
 		m->cols != right->cols)
@@ -236,8 +236,8 @@ inline int Matrix_sub_Matrix (Matrix *m, Matrix *right)
 {
 	uint32_t i, j;
 	
-	//CHECK_MATRIX(m);
-	//CHECK_MATRIX(right);
+	CHECK_MATRIX(m);
+	CHECK_MATRIX(right);
 	
 	if (m->rows != right->rows ||
 		m->cols != right->cols)
@@ -255,8 +255,8 @@ inline int Matrix_mul_Matrix (Matrix *m, Matrix *result, Matrix *right)
 	uint32_t i, j, k;
 	Matrix T;
 	
-	//CHECK_MATRIX(m);
-	//CHECK_MATRIX(right);
+	CHECK_MATRIX(m);
+	CHECK_MATRIX(right);
 	
 	if (m->cols != right->rows)
 		return -1;
@@ -275,8 +275,8 @@ inline int Matrix_div_Matrix (Matrix *m, Matrix *right)
 {
 	Matrix T, Inv;
 	
-	//CHECK_MATRIX(m);
-	//CHECK_MATRIX(right);
+	CHECK_MATRIX(m);
+	CHECK_MATRIX(right);
 	
 	if (m->cols != right->cols ||
 		right->rows != right->cols)
@@ -293,7 +293,7 @@ inline int Matrix_change_sign (Matrix *m)
 {
 	uint32_t i, j;
 
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -307,10 +307,8 @@ inline int Matrix_transpose (Matrix *m, Matrix *result)
 	uint32_t i, j;
 	Matrix T;
 	
-	//CHECK_MATRIX(m);
-	
-	T.rows = m->cols;
-	T.cols = m->rows;
+	CHECK_MATRIX(m);
+	Matrix_init_zero (&T, m->cols, m->rows);
 	
 	for (i = 0; i < m->rows; i++)
 		for (j = 0; j < m->cols; j++)
@@ -327,7 +325,7 @@ inline int Matrix_swap_rows (Matrix *m, uint32_t a, uint32_t b)
 	if (a == b)
 		return 0;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	CHECK_MATRIX_INDEX_PARAM (a, m->rows);
 	CHECK_MATRIX_INDEX_PARAM (b, m->rows);
 	
@@ -349,7 +347,7 @@ inline int Matrix_swap_cols (Matrix *m, uint32_t a, uint32_t b)
 	if (a == b)
 		return 0;
 	
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	CHECK_MATRIX_INDEX_PARAM (a, m->rows);
 	CHECK_MATRIX_INDEX_PARAM (b, m->rows);
 	
@@ -365,14 +363,14 @@ inline int Matrix_swap_cols (Matrix *m, uint32_t a, uint32_t b)
 
 inline int Matrix_inverse (Matrix *m)
 {
-	//CHECK_MATRIX(m);
+	CHECK_MATRIX(m);
 	if (m->rows != m->cols)
 		return -1;
 	
 	uint32_t c, i, j, k, n;
 	uint32_t N = m->rows;
-	float U_nn, U_in, U_ii, U_ij, U_nk, U_ik;
-	float L_in, L_ij, Y_ic, Y_jc, X_ic, X_jc;
+	float U_nn = 0, U_in = 0, U_ii = 0, U_ij = 0, U_nk = 0, U_ik = 0;
+	float L_in = 0, L_ij = 0, Y_ic = 0, Y_jc = 0, X_ic = 0, X_jc = 0;
 	
 	Matrix U, L, P, X, Y;
 	MATHLIB_ASSERT (Matrix_init_Matrix (&U, m));

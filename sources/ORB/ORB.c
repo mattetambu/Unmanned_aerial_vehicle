@@ -145,8 +145,10 @@ orb_check_subscriber (const struct orb_metadata *meta, orb_subscr_t subscriber, 
 	
 	if (meta->obj_controller->_sd[i].subscriber_pid != pid+1)
 	{
-		fprintf (stderr, "Can't %s, need first to be subscribed to the topic\n", op);
-		
+#ifdef DEBUG
+		if (getenv("VERBOSE"))
+			fprintf (stderr, "Can't %s, need first to be subscribed to the topic\n", op);
+#endif
 		// release the lock on the topic and return the error
 		ORB_UNLOCK_TOPIC_AND_RETURN (&meta->obj_controller->_lock, -1);
 	}
@@ -190,7 +192,10 @@ orb_check_advertiser (const struct orb_metadata *meta, orb_advert_t advertiser, 
 	
 	if (meta->obj_controller->_ad[i].advertiser_pid != pid+1)
 	{
-		fprintf (stderr, "Can't %s, need first to advertise the topic\n", op);
+#ifdef DEBUG
+		if (getenv("VERBOSE"))
+			fprintf (stderr, "Can't %s, need first to advertise the topic\n", op);
+#endif
 		
 		// release the lock on the topic and return the error
 		ORB_UNLOCK_TOPIC_AND_RETURN (&meta->obj_controller->_lock, -1);

@@ -26,16 +26,18 @@
 	 */
 	struct vehicle_global_position_s
 	{
-		absolute_time time_gps_usec;		/**< Timestamp (microseconds in GPS format), this is the timestamp from the gps module */
-		bool_t valid;		/**< true if position satisfies validity criteria of estimator */
-		float yaw;					/**< Compass heading in radians -PI..+PI. */
+		absolute_time time_gps_usec;	/**< Timestamp (microseconds in GPS format), this is the timestamp from the gps module */
+		bool_t valid;					/**< true if position satisfies validity criteria of estimator */
 		
-		float latitude;			/**< Latitude in 1E7 degrees */
+		float latitude;				/**< Latitude in 1E7 degrees */
 		float longitude;			/**< Longitude in 1E7 degrees */
 		float altitude;				/**< Altitude above MSL in meters */
+
 		float relative_altitude;	/**< Altitude above home position in meters */
 		float ground_level;			/**< Must be set to current ground level */
+		float baro_alt;
 		bool_t landed;				/**< true if vehicle is landed */
+		float yaw;					/**< Compass heading in radians -PI..+PI. */
 
 		float vx;					/**< Ground X velocity, m/s in NED */
 		float vy;					/**< Ground Y velocity, m/s in NED */

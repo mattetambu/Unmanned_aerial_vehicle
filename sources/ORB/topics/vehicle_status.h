@@ -30,6 +30,17 @@
 		main_state_auto,
 	} main_flight_mode_t;
 
+	inline static const char* main_flight_mode_to_string (main_flight_mode_t index)
+	{
+		switch(index)
+		{
+			return_custom_enum_string (main_state_manual, "main");
+			return_custom_enum_string (main_state_support, "support");
+			return_custom_enum_string (main_state_auto, "auto");
+			default: return NULL;
+		}
+	}
+
 	/* exact flight mode */
 	typedef enum sub_flight_mode_t
 	{

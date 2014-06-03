@@ -203,6 +203,7 @@ void* console_controller_loop (void* args)
 		
 		switch (s_command)
 		{
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 			case console_command_start_gui:
 				// start GUI
 				if (getenv("GUI_INIT_ERROR"))
@@ -236,7 +237,7 @@ void* console_controller_loop (void* args)
 				fprintf (stdout, "GUI closed\n");
 				
 				break;
-				
+#endif
 			case console_command_stop_sending_controls:
 				if  (!getenv("DO_NOT_SEND_CONTROLS"))
 				{

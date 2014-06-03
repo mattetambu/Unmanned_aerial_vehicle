@@ -51,6 +51,8 @@ void usage ()
 	printf ("\t Use TCP connection\n");
 	printf ("   -u --udp\n");
 	printf ("\t Use UDP connection [DEFAULT]\n");
+	printf ("   -e --export\n");
+	printf ("\t Export the flight data and flight controls to a .txt file\n");
 	printf ("   -g --gui\n");
 	printf ("\t Start the GUI (the Xserver must be already running - to start it launch startxwin from cmd)\n");
 	printf ("   -s --simulator\n");
@@ -81,6 +83,7 @@ int check_arguments (int argc, char **argv)
 		{"output-port",				required_argument,	0,	'o'},
 		{"tcp",						no_argument,		0,	't'},
 		{"udp",						no_argument,		0,	'u'},
+		{"export",					no_argument,		0,	'e'},
 		{"gui",						no_argument,		0,	'g'},
 		{"aircraft",				required_argument,	0,	'a'},
 		{"simulator",				no_argument,		0,	's'},
@@ -91,7 +94,7 @@ int check_arguments (int argc, char **argv)
 		{"help",					no_argument,		0,	'h'}
 	};
  
-	while ((option_character = getopt_long (argc, argv, "i:o:a:tugsm:dvwh", long_options, &option_index)) != -1)
+	while ((option_character = getopt_long (argc, argv, "i:o:a:tuegsm:dvwh", long_options, &option_index)) != -1)
 	{
 		switch (option_character)
 		{
@@ -112,9 +115,13 @@ int check_arguments (int argc, char **argv)
 			case 't': //set tcp_flag
 				setenv ("TCP_FLAG", "", 0);
 				break;
-			
+
 			case 'u': //set udp_flag
 				setenv ("UDP_FLAG", "", 0);
+				break;
+
+			case 'e': //set export_flag
+				setenv ("EXPORT_FLAG", "", 0);
 				break;
 			
 			case 'g': //set start_flightgear_flag
@@ -186,24 +193,23 @@ int check_arguments (int argc, char **argv)
 	if (!aircraft_model_name)
 	{
 		aircraft_model_name = strdup ((char *) DEFAULT_AIRCRAFT_MODEL);
-		r_geometry = QUAD_X;
 	}
 	if (!strcmp (aircraft_model_name, "quadcopter"))
 	{
 		aircraft_model_option = strdup (" --aircraft=quadra");
+		r_geometry = QUAD_PLUS;
+		setenv("DOUBLE_OUTPUT", "", 0);
 	}
-	/*
 	else if (!strcmp (aircraft_model_name, "arducopter"))
 	{
 		aircraft_model_option = strdup (" --aircraft=arducopter");
-		geometry = QUAD_X;
+		r_geometry = QUAD_PLUS;
 	}
-	else if (!strcmp (aircraft_model_name, "easystar"))
+	else if (!strcmp (aircraft_model_name, "YardStik"))
 	{
 		is_rotary_wing = 0;
-		aircraft_model_option = strdup (" --aircraft=EasyStar");
+		aircraft_model_option = strdup (" --aircraft=YardStik");
 	}
-	*/
 	else if (!strcmp (aircraft_model_name, "rascal"))
 	{
 		is_rotary_wing = 0;
@@ -213,6 +219,7 @@ int check_arguments (int argc, char **argv)
 	{
 		is_rotary_wing = 0;
 		aircraft_model_option = strdup (" --aircraft=c172p-2dpanel");
+		//aircraft_model_option = strdup (" --aircraft=c172p-2dpanel --prop:/engines/engine/running=true --prop:/engines/engine/starter=true --prop:/engines/engine/rpm=100");
 	}
 	else
 	{
@@ -281,7 +288,7 @@ int main (int n_args, char** args)
 	 */
 	//if (getenv("MISSION_SET"))
 		LIBXML_TEST_VERSION
-	
+
 	system_time_init ();
 	system_orb_init ();
 	param_init ();
@@ -295,7 +302,6 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 
-
 	// ************************************* start all system threads ****************************************
 	// start console controller
 	if (pthread_create (&console_thread_id, NULL, console_controller_loop, NULL) != 0)
@@ -307,7 +313,7 @@ int main (int n_args, char** args)
 
 	// start primary comunicator loop
 	// it must be before start simulator for tcp connections
-	if (pthread_create (&comunicator_thread_id, NULL, comunicator_loop, NULL) != 0)
+	if (pthread_create (&comunicator_thread_id, NULL, comunicator_loop, aircraft_model_name) != 0)
 	{
 		fprintf (stderr, "Can't create a thread to comunicate with FlightGear (errno: %d)\n", errno);
 		exit(-1);
@@ -319,18 +325,12 @@ int main (int n_args, char** args)
 		fprintf (stderr, "Can't create a thread to launch FlightGear (errno: %d)\n", errno);
 		exit(-1);
 	}
-	else if (!getenv("START_SIMULATOR"))
-	{
-		// export notification of hil off
-		fprintf (stderr, "trying to define a param\n");
-		param_define_int("HIL_ENABLED", 0);
-		fprintf (stderr, "param defined \n");
-	}
 
 	if (getenv("START_SIMULATOR"))
 		sleep (5);
 
 
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	// start GUI
 	if (getenv("START_GUI") &&  pthread_create (&GUI_thread_id, NULL, start_GUI, NULL) != 0)
 	{
@@ -338,14 +338,6 @@ int main (int n_args, char** args)
 		exit(-1);
 	}
 	
-#ifdef START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
-	if (getenv("START_SIMULATOR"))
-	{
-		while (!simulator_ready)
-			sleep (0.3);
-	}
-#endif
-
 	// start autopilot
 	if (pthread_create (&autopilot_thread_id, NULL, autopilot_loop, NULL) != 0)
 	{
@@ -368,7 +360,7 @@ int main (int n_args, char** args)
 		fprintf (stderr, "Can't create the test thread (errno: %d)\n", errno);
 		exit(-1);
 	}
-
+#endif
 
 	// ************************************* wait for all threads to exit ****************************************
 	// if the simulator mode is active then the main quit will arrive on simulator exit
@@ -385,11 +377,13 @@ int main (int n_args, char** args)
 	pthread_join(console_thread_id, NULL);
 
 
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	if (getenv("START_GUI") && !getenv("GUI_STOPPED"))
 	{
 		close_GUI ();
 		pthread_join(GUI_thread_id, (void**)&(thread_return_values[1]));
 	}
+#endif
 
 
 	if (input_socket >= 0)
@@ -407,15 +401,17 @@ int main (int n_args, char** args)
 	pthread_join (comunicator_thread_id, (void**)&(thread_return_values[2]));
 
 
-
 	// ************************************* print some data before exit ****************************************
 	fprintf (stdout, "\n\n");
 	if (getenv("VERBOSE"))
 	{
 		if (getenv("START_SIMULATOR"))
 			fprintf (stdout, "FlightGear-launcher return value: %d\n", *(thread_return_values[0]));
+
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 		if (getenv("START_GUI") || getenv("GUI_STOPPED"))
 			fprintf (stdout, "GUI-launcher return value: %d\n", *(thread_return_values[1]));
+#endif
 
 		fprintf (stdout, "Comunicator thread return value: %d\n", *(thread_return_values[2]));
 	}

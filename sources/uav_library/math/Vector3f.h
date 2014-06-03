@@ -44,6 +44,8 @@
 	int Vector3f_add_Vector3f (Vector3f *v, Vector3f *right);
 	int Vector3f_sub_Vector3f (Vector3f *v, Vector3f *right);
 	int Vector3f_mul_Vector3f (Vector3f *v, float *result, Vector3f *right);
+	int Vector3f_emul_Vector3f (Vector3f *v, Vector3f *result, Vector3f *right);
+	int Vector3f_ediv_Vector3f (Vector3f *v, Vector3f *result, Vector3f *right);
 	int Vector3f_cross_Vector3f (Vector3f *v, Vector3f *right);
 
 	int Vector3f_change_sign (Vector3f *v);

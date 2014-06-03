@@ -16,8 +16,5 @@
 	/* global variables */
 	extern pthread_t comunicator_thread_id;
 	extern int comunicator_thread_return_value;
-#ifdef START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
-	extern int simulator_ready;
-#endif
 	
 #endif

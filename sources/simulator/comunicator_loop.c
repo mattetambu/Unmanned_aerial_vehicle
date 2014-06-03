@@ -8,9 +8,16 @@
 #include <signal.h>
 #include <pthread.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <unistd.h>
+
 #include "comunicator_loop.h"
 #include "../uav_library/common.h"
 #include "../uav_library/param/param.h"
+#include "../uav_library/geo/geo.h"
 #include "../uav_library/time/drv_time.h"
 #include "../uav_library/io_ctrl/comunicator.h"
 #include "../uav_library/io_ctrl/socket_io.h"
@@ -37,12 +44,20 @@
 pthread_t comunicator_thread_id;
 int comunicator_thread_return_value = 0;
 
-#ifdef START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
-	int simulator_ready = 0;
-	static int received_packet_counter = 0;
+static bool_t simulator_fully_loaded = 0;
+static absolute_time start_time = 0;
+
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
+/* Subscribe to topics */
+static struct actuator_outputs_s actuator_outputs;
+#else
+const float delta = 0.003;
+const float max_thrust_value = 0.75;
+float test_controls[4] = {0, 0, 0, 0};
 #endif
 
 /* Advertise topics */
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 static orb_advert_t pub_hil_attitude = -1;
 static orb_advert_t pub_hil_gps = -1;
 static orb_advert_t pub_hil_global_pos = -1;
@@ -66,14 +81,10 @@ static struct sensor_mag_s mag;
 static struct sensor_optical_flow_s flow;
 static struct sensor_baro_s baro;
 
-/* Subscribe to topics */
-static struct actuator_outputs_s actuator_outputs;
-
 /* packet counter */
 static int hil_counter = 0;
 static int hil_frames = 0;
 static absolute_time old_timestamp = 0;
-
 
 /* constants */
 static const float g = 9.80665;
@@ -95,6 +106,7 @@ static const float bar2mbar = 1000.0;
 static const float mrad2rad = 1.0e-3f;
 static const float mg2ms2 = 9.80665f / 1000.0f;
 static const float mga2ga = 1.0e-3f;
+#endif
 
 
 int parse_flight_data (double* flight_data, char* received_packet)
@@ -114,15 +126,29 @@ int parse_flight_data (double* flight_data, char* received_packet)
 
 int create_output_packet (char* output_packet)
 {
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	//Construct a packet to send over UDP with flight flight_outputs
 	return	sprintf (output_packet, "%lf\t%lf\t%lf\t%lf\n",
 					actuator_outputs.output[0],
 					actuator_outputs.output[1],
 					actuator_outputs.output[2],
 					actuator_outputs.output[3]);
+#else
+	if (simulator_fully_loaded)
+	{
+		test_controls[3] = (test_controls[3] >= max_thrust_value)? max_thrust_value : test_controls[3] + delta;
+
+		if (is_rotary_wing)
+		{
+			test_controls[0] = (test_controls[0] >= max_thrust_value)? max_thrust_value : test_controls[0] + delta;
+			test_controls[1] = (test_controls[1] >= max_thrust_value)? max_thrust_value : test_controls[1] + delta;
+			test_controls[2] = (test_controls[2] >= max_thrust_value)? max_thrust_value : test_controls[2] + delta;
+		}
+#endif
 }
 
 
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 int publish_flight_data (double* flight_data)
 {
 	int i, j;
@@ -138,12 +164,6 @@ int publish_flight_data (double* flight_data)
 	float lon = flight_data[FDM_LONGITUDE] + pos_noise*cos(lat)/r_earth;
 	float alt = flight_data[FDM_ALTITUDE] + alt_noise;
 	float ground_level = flight_data[FDM_GROUND_LEVEL] + alt_noise;
-
-	// precaution needed because on startup flightgear sends many wrong data
-	if (alt < 0)
-	{
-		return 0;
-	}
 
 	float phi = flight_data[FDM_ROLL_ANGLE], cosPhi = cos(phi), sinPhi = sin(phi);
 	float theta = flight_data[FDM_PITCH_ANGLE], cosThe = cos(theta), sinThe = sin(theta);
@@ -372,8 +392,8 @@ int publish_flight_data (double* flight_data)
 	hil_frames++;
 
 	// output
-	if (getenv("VERBOSE") && (timestamp - old_timestamp) > 60000000) {
-		fprintf (stdout, "Receiving hil data from FlightGear at %d hz\n", hil_frames / 60);
+	if (getenv("VERBOSE") && (timestamp - old_timestamp) > 15000000) {
+		fprintf (stdout, "INFO: Receiving hil data from FlightGear at %d hz\n", hil_frames / 15);
 		fflush (stdout);
 		old_timestamp = timestamp;
 		hil_frames = 0;
@@ -416,7 +436,6 @@ int publish_flight_data (double* flight_data)
 
 	hil_gps.timestamp_satellites = time_usec;
 	hil_gps.satellites_visible = satellites_visible;
-
 	/* publish GPS measurement data */
 	if (orb_publish (ORB_ID(vehicle_gps_position), pub_hil_gps, &hil_gps) < 0)
 	{
@@ -431,7 +450,7 @@ int publish_flight_data (double* flight_data)
 	hil_global_pos.vx = vx;
 	hil_global_pos.vy = vy;
 	hil_global_pos.vz = vz;
-	hil_global_pos.yaw = psi;
+	hil_global_pos.yaw = _wrap_pi(psi);
 	hil_global_pos.ground_level = ground_level;
 
 	if (orb_publish (ORB_ID(vehicle_hil_global_position), pub_hil_global_pos, &hil_global_pos) < 0)
@@ -461,7 +480,7 @@ int publish_flight_data (double* flight_data)
 
 	hil_attitude.roll = phi;
 	hil_attitude.pitch = theta;
-	hil_attitude.yaw = psi;
+	hil_attitude.yaw = _wrap_pi(psi);
 	hil_attitude.roll_rate = phidot;
 	hil_attitude.pitch_rate = thetadot;
 	hil_attitude.yaw_rate = psidot;
@@ -486,7 +505,7 @@ int publish_flight_data (double* flight_data)
 
 	return return_value;
 }
-
+#endif
 
 
 void* comunicator_loop (void* args)
@@ -495,10 +514,37 @@ void* comunicator_loop (void* args)
 	char data_sent[OUTPUT_DATA_MAX_LENGTH];
 	double FlightGear_flight_data [FDM_N_PROPERTIES];		// FDM data
 	struct sockaddr_in output_sockaddr;
+	int i = 0;
+	FILE *fp_in = NULL, *fp_out = NULL;
+
+	if (getenv("EXPORT_FLAG"))
+	{
+		char input_file_name[30], output_file_name[50];
+		strcpy (input_file_name, (char *) args);
+		strcat(input_file_name, "_test_input_data.out");
+		strcpy (output_file_name, (char *) args);
+		strcat(output_file_name, "_test_output_data.out");
+
+		fp_in = fopen((const char*) input_file_name, "w");
+		fp_out = fopen((const char*) output_file_name, "w");
+		if (fp_in == NULL || fp_out == NULL)
+		{
+			fprintf (stderr, "Can't create the output file to export the flight data\n");
+			comunicator_thread_return_value = -1;
+			pthread_exit(&comunicator_thread_return_value);
+		}
+
+		fprintf (fp_in, "Index\tTime\tTemperature\tPressure\tlatitude\tlongitude\taltitiude\tground_level\troll_angle\tpitch_angle\tyaw_angle\troll_rate\tpitch_rate\tyaw_rate\tx_body_velocity\ty_body_velocity\tz_body_velocity\tVelocity:_East\tVelocity_North\tVelocity_Down\tAirspeed\tX_body_accel\tY_body_accel\tZ_body_accel\tEngine_rotation\tEngine_thrust\tMagnetic_Variation\tMagnetic_Dip\n");
+		if (is_rotary_wing)
+			fprintf (fp_out, "Index\tthrottle0\tthrottle1\tthrottle2\tthrottle3\n");
+		else
+			fprintf (fp_out, "Index\taileron\televator\trudder\tthrottle\n");
+	}
+
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	int poll_return_value;
 	absolute_time usec_max_poll_wait_time = 100000;
 
-	
 	// ************************************* advertise ******************************************
 	pub_hil_gps = orb_advertise (ORB_ID(vehicle_gps_position));
 	if (pub_hil_gps == -1)
@@ -585,6 +631,7 @@ void* comunicator_loop (void* args)
 		fprintf (stderr, "Comunicator thread failed to subscribe the actuator_controls topic\n");
 		exit (-1);
 	}
+#endif
 
 	
 	// **************************************** init sockets ******************************************
@@ -632,6 +679,8 @@ void* comunicator_loop (void* args)
 		fflush(stdout);
 	}
 
+
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	memset (&airspeed, 0, sizeof(airspeed));
 	memset (&hil_attitude, 0, sizeof(hil_attitude));
 	/*
@@ -640,7 +689,10 @@ void* comunicator_loop (void* args)
 	hil_global_pos.landed = 1;
 #endif
 	*/
+#endif
 	
+	start_time = get_absolute_time();
+
 	// **************************************** start primary loop ******************************************
 	while (!_shutdown_all_systems)
 	{
@@ -657,15 +709,7 @@ void* comunicator_loop (void* args)
 			
 			break;
 		}
-		
-#ifdef START_AUTOPILOT_WHEN_SIMULATOR_IS_READY
-		if (!simulator_ready)
-		{
-			received_packet_counter++;
-			if (received_packet_counter > 1000)
-				simulator_ready = 1;
-		}
-#endif
+
 
 		if (parse_flight_data (FlightGear_flight_data, received_data) < FDM_N_PROPERTIES)
 		{
@@ -673,17 +717,26 @@ void* comunicator_loop (void* args)
 			fprintf (stderr, "Can't parse the flight-data from FlightGear\n");
 		}
 		
+
 		// ******************************************* publish *******************************************
-		if (publish_flight_data (FlightGear_flight_data) < 0)
+		if (!simulator_fully_loaded)
+		{
+			// precaution needed because on startup flightgear sends many wrong data
+			if (FlightGear_flight_data[FDM_FLIGHT_TIME] > 2.0)
+				simulator_fully_loaded = 1;
+		}
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
+		else if (publish_flight_data (FlightGear_flight_data) < 0)
 		{
 			// that's undesiderable but there is not much we can do
 			fprintf (stderr, "Can't publish flight sensors data\n");
 		}
-		
+#endif
+
 
 		if (!getenv("DO_NOT_SEND_CONTROLS"))
 		{
-
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 			// wait for the result of the autopilot logic calculation
 			poll_return_value = orb_poll (ORB_ID_VEHICLE_CONTROLS, actuator_outputs_sub, usec_max_poll_wait_time);
 			if (poll_return_value < 0)
@@ -698,8 +751,9 @@ void* comunicator_loop (void* args)
 			}
 			else
 				orb_copy (ORB_ID_VEHICLE_CONTROLS, actuator_outputs_sub, (void *) &actuator_outputs);
+#endif
 			
-			
+
 			// OUTPUTS
 			if (create_output_packet (data_sent) < CTRL_N_CONTROLS)
 			{
@@ -707,6 +761,7 @@ void* comunicator_loop (void* args)
 				fprintf (stderr, "Can't create the packet to be sent to FlightGear\n");
 			}
 			
+
 			if (send_output_packet (data_sent, strlen(data_sent), output_socket, &output_sockaddr) < strlen(data_sent))
 			{
 				sleep(0.5);
@@ -719,10 +774,20 @@ void* comunicator_loop (void* args)
 				
 				break;
 			}
+
+
+			if (getenv("EXPORT_FLAG"))
+			{
+				if (fp_in)
+					fprintf (fp_in, "%d\t%s", i, received_data);
+				if (fp_out)
+					fprintf (fp_out, "%d\t%s", i, data_sent);
+				i++;
+			}
 		}
 	}
 	
-	
+#ifndef BYPASS_OUTPUT_CONTROLS_AND_DO_UAV_MODEL_TEST_DEMO
 	/*
 	 * do unsubscriptions
 	 */
@@ -764,7 +829,15 @@ void* comunicator_loop (void* args)
 
 	if (orb_unadvertise (ORB_ID(vehicle_hil_attitude), pub_hil_attitude, pthread_self()) < 0)
 		fprintf (stderr, "Comunicator thread failed to unadvertise the vehicle_hil_attitude topic\n");
-	
+#endif
+
+	if (getenv("EXPORT_FLAG"))
+	{
+		if (fp_in)
+			fclose(fp_in);
+		if (fp_out)
+			fclose(fp_out);
+	}
 
 	pthread_exit(&comunicator_thread_return_value);
 	return 0;

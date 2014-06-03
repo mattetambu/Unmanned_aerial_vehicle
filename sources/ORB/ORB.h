@@ -14,7 +14,7 @@
 
 
 	#define MAX_ADVERTISERS		10
-	#define MAX_SUBSCRIBERS		15
+	#define MAX_SUBSCRIBERS		20
 
 
 	typedef struct advertiser_data_t {

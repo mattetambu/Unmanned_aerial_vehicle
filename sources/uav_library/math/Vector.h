@@ -13,11 +13,15 @@
 	#include <math.h>
 	#include <string.h>
 
-	#define MATHLIB_ASSERT(test)		if ((test) != 0) {	\
-											fprintf (stderr, "WARNING: Assert failed (file:%s, row:%d )\n", __FILE__, __LINE__);	\
-											return -1;	\
-										}
-	
+	#ifdef DEBUG
+		#define MATHLIB_ASSERT(test)		if ((test) != 0) {	\
+												fprintf (stderr, "WARNING: Assert failed (file:%s, row:%d )\n", __FILE__, __LINE__);	\
+												return -1;	\
+											}
+	#else
+		#define MATHLIB_ASSERT(test)		test;
+	#endif
+
 	#define VECTOR_MAX_ROWS				4
 	#define CHECK_VECTOR(v)				if (!v || v->rows <= 0 || v->rows > VECTOR_MAX_ROWS) return -1;
 	#define CHECK_VECTOR_INDEX_PARAM(i, max)	if (i < 0 || i >= max) return -1;
@@ -55,6 +59,8 @@
 	inline int Vector_div_float (Vector *v, float value);
 	inline int Vector_add_Vector (Vector *v, Vector *right);
 	inline int Vector_sub_Vector (Vector *v, Vector *right);
+	inline int Vector_emul_Vector (Vector *v, Vector *result, Vector *right, uint32_t n_rows);
+	inline int Vector_ediv_Vector (Vector *v, Vector *result, Vector *right, uint32_t n_rows);
 
 	inline int Vector_change_sign (Vector *v);
 	inline int Vector_dot (Vector *v, float *result, Vector *right);

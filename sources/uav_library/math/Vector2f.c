@@ -139,6 +139,22 @@ int Vector2f_mul_Vector2f (Vector2f *v, float *result, Vector2f *right)
 	return Vector2f_dot (v, result, right);
 }
 
+int Vector2f_emul_Vector2f (Vector3f *v, Vector3f *result, Vector3f *right)
+{
+	CHECK_VECTOR2F(v);
+	CHECK_VECTOR2F(right);
+
+	return Vector_emul_Vector (v, result, right, VECTOR2F_ROWS);
+}
+
+int Vector2f_ediv_Vector2f (Vector3f *v, Vector3f *result, Vector3f *right)
+{
+	CHECK_VECTOR2F(v);
+	CHECK_VECTOR2F(right);
+
+	return Vector_ediv_Vector (v, result, right, VECTOR2F_ROWS);
+}
+
 int Vector2f_cross_Vector2f (Vector2f *v, float *result, Vector2f *right)
 {
 	float v0, v1, right0, right1;

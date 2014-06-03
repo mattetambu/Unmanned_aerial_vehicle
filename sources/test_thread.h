@@ -11,6 +11,8 @@
 
 	/* function prototypes */
 	void* test_thread_body (void* args);
+	void* test_thread_body1 (void* args);
+	void* test_thread_body2 (void* args);
 	
 	/* global variables */
 	extern pthread_t test_thread_id, test_thread_id2;
